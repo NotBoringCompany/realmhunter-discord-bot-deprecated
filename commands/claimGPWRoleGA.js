@@ -12,7 +12,7 @@ const claimGPWRoleGA = async (message) => {
                     type: 2,
                     style: 1,
                     label: 'Claim Genesis Pass WL here',
-                    custom_id: 'claimGPWRoleGA'
+                    custom_id: 'claimGPWRoleGAButton'
                 },
             ],
         },

@@ -2,8 +2,9 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 
-const { Client, Events, GatewayIntentBits, Collection } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, InteractionType } = require('discord.js');
 const claimGPWRoleGA = require('./commands/claimGPWRoleGA');
+const claimGPWRoleGAModal = require('./modals/claimGPWRoleGA');
 const token = process.env.BOT_TOKEN;
 
 const client = new Client({
@@ -49,21 +50,26 @@ client.on('messageCreate', async (message) => {
     }
 })
 
-client.on(Events.InteractionCreate, async (interaction) => {
-    if (!interaction.isChatInputCommand()) return;
-
-    const command = interaction.client.commands.get(interaction.commandName);
-
-    if (!command) {
-        console.error(`[ERROR] The command ${interaction.commandName} does not exist.`);
-        return;
+client.on('interactionCreate', async (interaction) => {
+    if (interaction.isButton()) {
+        if (interaction.customId === 'claimGPWRoleGAButton') {
+            await interaction.showModal(claimGPWRoleGAModal);
+        }
     }
+    if (interaction.type === InteractionType.ModalSubmit) {
+        if (interaction.customId === 'claimGPWRoleGAModal') {
+            console.log(interaction.fields.getTextInputValue('collabName'));
+        }
+    } else if (interaction.type === InteractionType.ApplicationCommand) {
+        if (!interaction.isChatInputCommand()) return;
 
-    try {
+        const command = interaction.client.commands.get(interaction.commandName);
+
+        if (!command) {
+            console.error(`[ERROR] The command ${interaction.commandName} does not exist.`);
+            return;
+        }
         await command.execute(interaction);
-    } catch (err) {
-        console.error(err);
-        await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true })
     }
 });
 
