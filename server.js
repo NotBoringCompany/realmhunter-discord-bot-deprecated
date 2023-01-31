@@ -2,7 +2,8 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 
-const { Client, Events, GatewayIntentBits, Collection, InteractionResponse } = require('discord.js');
+const { Client, Events, GatewayIntentBits, Collection } = require('discord.js');
+const claimGPWRoleGA = require('./commands/claimGPWRoleGA');
 const token = process.env.BOT_TOKEN;
 
 const client = new Client({
@@ -19,7 +20,7 @@ const client = new Client({
 // LOADING SLASH COMMANDS
 client.commands = new Collection();
 
-const commandsPath = path.join(__dirname, 'commands');
+const commandsPath = path.join(__dirname, 'slash-commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
 for (const file of commandFiles) {
@@ -37,6 +38,16 @@ for (const file of commandFiles) {
 client.on('ready', c => {
     console.log(`Logged in as ${c.user.tag}`);
 });
+
+client.on('messageCreate', async (message) => {
+    if (message.content.toLowerCase() === '!claimgpwrolega') {
+        // TEST CHANNEL: founders-bot-commands (1027153290745626675)
+        if (message.channelId !== '1027153290745626675') {
+            return;
+        }
+        await claimGPWRoleGA(message);
+    }
+})
 
 client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.isChatInputCommand()) return;
