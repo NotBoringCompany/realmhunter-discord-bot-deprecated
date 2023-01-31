@@ -3,6 +3,7 @@
     "discord.js": "^14.7.1",
     "dotenv": "^16.0.3",
     "fs": "^0.0.1-security",
+    "google-spreadsheet": "^3.3.0",
     "path": "^0.12.7"
   },
   "devDependencies": {
