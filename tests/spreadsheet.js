@@ -1,13 +1,15 @@
 require('dotenv').config();
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const collabSheet = process.env.COLLAB_SHEET;
-const creds = require('../serviceAcc.json');
 
 // initialize sheet with collab sheet ID
 const document = new GoogleSpreadsheet(collabSheet);
 
 const checkGiveawayEntry = async (wallet) => {
-    await document.useServiceAccountAuth(creds);
+    await document.useServiceAccountAuth({
+        client_email: process.env.SERVICE_EMAIL,
+        private_key: process.env.PRIVATE_KEY.replace(/\\n/g, '\n'),
+    });
     await document.loadInfo();
 
     const guaranteedSheet = document.sheetsByIndex[1];

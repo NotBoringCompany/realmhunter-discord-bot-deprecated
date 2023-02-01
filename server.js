@@ -5,6 +5,7 @@ const path = require('path');
 const { Client, GatewayIntentBits, Collection, InteractionType } = require('discord.js');
 const claimGPWRoleGA = require('./commands/claimGPWRoleGA');
 const claimGPWRoleGAModal = require('./modals/claimGPWRoleGA');
+const chooseGPWCollab = require('./selectMenus/collabGPW');
 const token = process.env.BOT_TOKEN;
 
 const client = new Client({
@@ -41,23 +42,54 @@ client.on('ready', c => {
 });
 
 client.on('messageCreate', async (message) => {
-    if (message.content.toLowerCase() === '!claimgpwrolega') {
-        // TEST CHANNEL: founders-bot-commands (1027153290745626675)
-        if (message.channelId !== '1027153290745626675') {
+    // if (message.content.toLowerCase() === '!claimgpwrolega') {
+    //     // must be from `The Creators`.
+    //     if (!message.member._roles.includes('956946650218237993')) {
+    //         return;
+    //     }
+
+    //     // TEST CHANNEL: founders-bot-commands and bot-commands
+    //     if (message.channelId === '1070311416109740042' || message.channelId === '1070192644644413460') {
+    //         await claimGPWRoleGA(message);
+    //     } else {
+    //         return;
+    //     }
+    // }
+
+    if (message.content.toLowerCase() === '!testmenu') {
+        // must be from `The Creators`.
+        if (!message.member._roles.includes('956946650218237993')) {
             return;
         }
-        await claimGPWRoleGA(message);
-    }
-})
 
-client.on('interactionCreate', async (interaction) => {
-    if (interaction.isButton()) {
-        if (interaction.customId === 'claimGPWRoleGAButton') {
-            await interaction.showModal(claimGPWRoleGAModal);
+        const collabGPWMenus = await chooseGPWCollab();
+
+        // TEST CHANNEL: founders-bot-commands and bot-commands
+        if (message.channelId === '1070311416109740042' || message.channelId === '1070192644644413460') {
+            for (let i = 0; i < collabGPWMenus.length; i++) {
+                await message.channel.send({ components: [collabGPWMenus[i]] });
+            }
+        } else {
+            return;
         }
     }
+});
+
+client.on('interactionCreate', async (interaction) => {
+    if (interaction.isStringSelectMenu()) {
+        if (interaction.customId.startsWith('collabGPWMenu')) {
+            await interaction.showModal(claimGPWRoleGAModal(interaction.values[0]));
+        }
+    }
+
+    // if (interaction.isButton()) {
+    //     if (interaction.customId === 'claimGPWRoleGAButton') {
+    //         await interaction.showModal(claimGPWRoleGAModal);
+    //     }
+    // }
     if (interaction.type === InteractionType.ModalSubmit) {
         if (interaction.customId === 'claimGPWRoleGAModal') {
+            // CHANGE LATER TO GOOGLE SHEETS LOGIC!
             console.log(interaction.fields.getTextInputValue('collabName'));
         }
     } else if (interaction.type === InteractionType.ApplicationCommand) {
