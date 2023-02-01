@@ -62,12 +62,15 @@ client.on('messageCreate', async (message) => {
             return;
         }
 
-        const collabGPWMenus = await chooseGPWCollab();
+        const { guaranteedCollabMenus, overallocatedCollabMenus } = await chooseGPWCollab();
 
         // TEST CHANNEL: founders-bot-commands and bot-commands
         if (message.channelId === '1070311416109740042' || message.channelId === '1070192644644413460') {
-            for (let i = 0; i < collabGPWMenus.length; i++) {
-                await message.channel.send({ components: [collabGPWMenus[i]] });
+            for (let i = 0; i < guaranteedCollabMenus.length; i++) {
+                await message.channel.send({ components: [guaranteedCollabMenus[i]] });
+            }
+            for (let i = 0; i < overallocatedCollabMenus.length; i++) {
+                await message.channel.send({ components: [overallocatedCollabMenus[i]] });
             }
         } else {
             return;
@@ -77,8 +80,10 @@ client.on('messageCreate', async (message) => {
 
 client.on('interactionCreate', async (interaction) => {
     if (interaction.isStringSelectMenu()) {
-        if (interaction.customId.startsWith('collabGPWMenu')) {
-            await interaction.showModal(claimGPWRoleGAModal(interaction.values[0]));
+        if (interaction.customId.startsWith('guaranteedGPWMenu')) {
+            await interaction.showModal(claimGPWRoleGAModal(interaction.values[0], true));
+        } else if (interaction.customId.startsWith('overallocatedGPWMenu')) {
+            await interaction.showModal(claimGPWRoleGAModal(interaction.values[0], false));
         }
     }
 
@@ -88,8 +93,13 @@ client.on('interactionCreate', async (interaction) => {
     //     }
     // }
     if (interaction.type === InteractionType.ModalSubmit) {
-        if (interaction.customId === 'claimGPWRoleGAModal') {
+        if (interaction.customId === 'claimGuaranteedGPWModal') {
             // CHANGE LATER TO GOOGLE SHEETS LOGIC!
+            console.log('GUARANTEED!');
+            console.log(interaction.fields.getTextInputValue('collabName'));
+        } else if (interaction.customId === 'claimOverallocatedGPWModal') {
+            // CHANGE LATER TO GOOGLE SHEETS LOGIC!
+            console.log('OVERALLOCATED!');
             console.log(interaction.fields.getTextInputValue('collabName'));
         }
     } else if (interaction.type === InteractionType.ApplicationCommand) {

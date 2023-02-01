@@ -1,9 +1,15 @@
 const { ActionRowBuilder, TextInputBuilder } = require('@discordjs/builders');
 const { ModalBuilder, TextInputStyle } = require('discord.js');
 
-const claimGPWRoleGAModal = (collabName) => {
+/**
+ * 
+ * @param {String} collabName the name of the collab/project that gave away Genesis Pass whitelist spots
+ * @param {Boolean} isGuaranteed if true, collab is guaranteed. otherwise, overallocated.
+ * @returns 
+ */
+const claimGPWRoleGAModal = (collabName, isGuaranteed) => {
     return new ModalBuilder()
-        .setCustomId('claimGPWRoleGAModal')
+        .setCustomId(`${isGuaranteed ? 'claimGuaranteedGPWModal' : 'claimOverallocatedGPWModal'}`)
         .setTitle('Claim Genesis Pass whitelist role')
         .addComponents([
             new ActionRowBuilder().addComponents(

@@ -4,29 +4,35 @@ const getGPWCollabs = require('../utils/getGPWCollabs');
 // query through the spreadsheet to get the list of Genesis Pass collabs.
 const chooseGPWCollabMenus = async () => {
     try {
-        const projects = await getGPWCollabs();
+        const getProjects = await getGPWCollabs();
+        const guaranteedProjects = getProjects.guaranteedProjects;
+        const overallocatedProjects = getProjects.overallocatedProjects;
 
         // since each menu can only have up to 25 options, we need to calculate how many menus we need.
-        // const totalMenusRequired = Math.ceil(projects.length / 25);
-
-        // since each menu can only have up to 25 options, we need to calculate how many menus we need.
-        const slicedProjects = [];
+        const slicedGuaranteedProjects = [];
+        const slicedOverallocatedProjects = [];
         // slice the projects array into chunks of 25 to give off the amount of menus we need.
-        for (let i = 0; i < projects.length; i += 25) {
-            const chunk = projects.slice(i , i + 25);
-            slicedProjects.push(chunk);
+        for (let i = 0; i < guaranteedProjects.length; i += 25) {
+            const chunk = guaranteedProjects.slice(i , i + 25);
+            slicedGuaranteedProjects.push(chunk);
         }
 
-        const collabMenus = [];
+        for (let i = 0; i < overallocatedProjects.length; i += 25) {
+            const chunk = overallocatedProjects.slice(i , i + 25);
+            slicedOverallocatedProjects.push(chunk);
+        }
 
-        for (let j = 0; j < slicedProjects.length; j++) {
-            const collabMenu = new ActionRowBuilder()
+        const guaranteedCollabMenus = [];
+        const overallocatedCollabMenus = [];
+
+        for (let i = 0; i < slicedGuaranteedProjects.length; i++) {
+            const guaranteedCollabMenu = new ActionRowBuilder()
                 .addComponents(
                     new StringSelectMenuBuilder()
-                        .setCustomId(`collabGPWMenu${j}`)
+                        .setCustomId(`guaranteedGPWMenu${i}`)
                         .setPlaceholder('Choose a collab')
                         .addOptions(
-                            slicedProjects[j].map(project => {
+                            slicedGuaranteedProjects[i].map(project => {
                                 return {
                                     label: project,
                                     value: project
@@ -34,10 +40,31 @@ const chooseGPWCollabMenus = async () => {
                             }),
                         ),
                 );
-            collabMenus.push(collabMenu);
+            guaranteedCollabMenus.push(guaranteedCollabMenu);
         }
 
-        return Promise.resolve(collabMenus);
+        for (let i = 0; i < slicedOverallocatedProjects.length; i++) {
+            const overallocatedCollabMenu = new ActionRowBuilder()
+                .addComponents(
+                    new StringSelectMenuBuilder()
+                        .setCustomId(`overallocatedGPWMenu${i}`)
+                        .setPlaceholder('Choose a collab')
+                        .addOptions(
+                            slicedOverallocatedProjects[i].map(project => {
+                                return {
+                                    label: project,
+                                    value: project
+                                }
+                            }),
+                        ),
+                );
+            overallocatedCollabMenus.push(overallocatedCollabMenu);
+        }
+
+        return {
+            guaranteedCollabMenus: guaranteedCollabMenus,
+            overallocatedCollabMenus: overallocatedCollabMenus
+        }
     } catch (err) {
         throw err;
     }

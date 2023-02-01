@@ -24,12 +24,17 @@ const getGPWCollabs = async () => {
 
         // initialize an array to store the project names
         const projects = [];
+        const guaranteedProjects = [];
+        const overallocatedProjects = [];
 
         // loop through the guaranteed sheet and add the project names to the array
         for (let i = 2; i < guaranteedSheet.rowCount; i++) {
             if (guaranteedSheet.getCell(i, 2).value !== null || guaranteedSheet.getCell(i, 2).value !== undefined) {
                 if (!projects.includes(guaranteedSheet.getCell(i, 2).value)) {
                     projects.push(guaranteedSheet.getCell(i, 2).value);
+                }
+                if (!guaranteedProjects.includes(guaranteedSheet.getCell(i, 2).value)) {
+                    guaranteedProjects.push(guaranteedSheet.getCell(i, 2).value);
                 }
             }
         }
@@ -40,12 +45,22 @@ const getGPWCollabs = async () => {
                 if (!projects.includes(overallocatedSheet.getCell(j, 6).value)) {
                     projects.push(overallocatedSheet.getCell(j, 6).value);
                 }
+
+                if (!overallocatedProjects.includes(overallocatedSheet.getCell(j, 6).value)) {
+                    overallocatedProjects.push(overallocatedSheet.getCell(j, 6).value);
+                }
             }
         }
 
         const filteredProjects = projects.filter(project => project !== null);
+        const filteredGuaranteedProjects = guaranteedProjects.filter(project => project !== null);
+        const filteredOverallocatedProjects = overallocatedProjects.filter(project => project !== null);
         
-        return Promise.resolve(filteredProjects);
+        return {
+            projects: filteredProjects,
+            guaranteedProjects: filteredGuaranteedProjects,
+            overallocatedProjects: filteredOverallocatedProjects,
+        }
     } catch (err) {
         throw err;
     }
