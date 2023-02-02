@@ -56,6 +56,16 @@ client.on('messageCreate', async (message) => {
     //     }
     // }
 
+    if (message.content.toLowerCase() === '!testroleaichima') {
+        // must be from `The Creators`.
+        if (!message.member._roles.includes('956946650218237993')) {
+            return;
+        }
+
+        // add genesis pass whitelist
+        await message.member.roles.add('1047902832197636136');
+    }
+
     if (message.content.toLowerCase() === '!testmenu') {
         // must be from `The Creators`.
         if (!message.member._roles.includes('956946650218237993')) {
@@ -94,11 +104,11 @@ client.on('interactionCreate', async (interaction) => {
     // }
     if (interaction.type === InteractionType.ModalSubmit) {
         if (interaction.customId === 'claimGuaranteedGPWModal') {
-            // CHANGE LATER TO GOOGLE SHEETS LOGIC!
+            // CHANGE LATER TO GOOGLE SHEETS LOGIC! (checkGAEntry)
             console.log('GUARANTEED!');
             console.log(interaction.fields.getTextInputValue('collabName'));
         } else if (interaction.customId === 'claimOverallocatedGPWModal') {
-            // CHANGE LATER TO GOOGLE SHEETS LOGIC!
+            // CHANGE LATER TO GOOGLE SHEETS LOGIC! (checkGAEntry)
             console.log('OVERALLOCATED!');
             console.log(interaction.fields.getTextInputValue('collabName'));
         }
