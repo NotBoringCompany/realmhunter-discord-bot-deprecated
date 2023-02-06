@@ -1,5 +1,5 @@
 const { ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
-const getGPWCollabs = require('../utils/getGPWCollabs');
+const getGPWCollabs = require('../deprecated/getGPWCollabs');
 
 // query through the spreadsheet to get the list of Genesis Pass collabs.
 const chooseGPWCollabMenus = async () => {
@@ -69,7 +69,5 @@ const chooseGPWCollabMenus = async () => {
         throw err;
     }
 }
-
-chooseGPWCollabMenus();
 
 module.exports = chooseGPWCollabMenus;

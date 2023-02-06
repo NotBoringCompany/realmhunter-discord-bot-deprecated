@@ -6,6 +6,7 @@ const { Client, GatewayIntentBits, Collection, InteractionType } = require('disc
 const claimGPWRoleGA = require('./commands/claimGPWRoleGA');
 const claimGPWRoleGAModal = require('./modals/claimGPWRoleGA');
 const chooseGPWCollab = require('./selectMenus/collabGPW');
+const { createBackup, fetchBackupInfo } = require('./commands/backup');
 const token = process.env.BOT_TOKEN;
 
 const client = new Client({
@@ -42,19 +43,22 @@ client.on('ready', c => {
 });
 
 client.on('messageCreate', async (message) => {
-    // if (message.content.toLowerCase() === '!claimgpwrolega') {
-    //     // must be from `The Creators`.
-    //     if (!message.member._roles.includes('956946650218237993')) {
-    //         return;
-    //     }
 
-    //     // TEST CHANNEL: founders-bot-commands and bot-commands
-    //     if (message.channelId === '1070311416109740042' || message.channelId === '1070192644644413460') {
-    //         await claimGPWRoleGA(message);
-    //     } else {
-    //         return;
-    //     }
-    // }
+    if (message.content.toLowerCase() === '!backupserver') {
+        if (!message.member._roles.includes('956946650218237993')) {
+            return;
+        }
+
+        await createBackup(message);
+    }
+
+    if (message.content.toLowerCase() === '!fetchbackupinfo') {
+        if (!message.member._roles.includes('956946650218237993')) {
+            return;
+        }
+
+        await fetchBackupInfo(message, '1072283311394525184');
+    }
 
     if (message.content.toLowerCase() === '!testroleaichima') {
         // must be from `The Creators`.
