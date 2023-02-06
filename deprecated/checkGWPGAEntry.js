@@ -10,7 +10,6 @@ const document = new GoogleSpreadsheet(collabSheet);
  * @param {Boolean} isGuaranteed whether the project has a guaranteed spot. if false, then it's overallocated.
  * @param {String} dcUsername the discord username (e.g. Username#1234)
  * @param {String} wallet the wallet address of the user
- * @return {Object}
  */
 const checkGWPGAEntry = async (collab, isGuaranteed, dcUsername, wallet) => {
     try {
@@ -23,6 +22,7 @@ const checkGWPGAEntry = async (collab, isGuaranteed, dcUsername, wallet) => {
 
         // return message object
         let returnMessage;
+
         // only wallet and discord username can be used to identify an entry, with wallet being more significant in priority.
         // if after the loop the wallet doesn't match, we will need to check the discord username.
         let walletMatches = false;
@@ -46,7 +46,7 @@ const checkGWPGAEntry = async (collab, isGuaranteed, dcUsername, wallet) => {
                 const walletToCheck = guaranteedSheet.getCell(i, 1).value;
                 const collabToCheck = guaranteedSheet.getCell(i, 2).value;
 
-                // sometimes the wallet may be null, so we will skip this row if so.
+                // sometimes the wallet may be null, so we will skip this row if so to not throw an error.
                 if (!walletToCheck) {
                     continue;
                 }
@@ -55,7 +55,6 @@ const checkGWPGAEntry = async (collab, isGuaranteed, dcUsername, wallet) => {
                 if (walletToCheck.toLowerCase() === wallet.toLowerCase()) {
                     walletMatches = true;
 
-                    // now we check if dc username matches.
                     // if dc username is null/empty, we will first check for the collab and see if it's empty too.
                     if (!dcUsernameToCheck) {
                         // if collab is also null/empty, we will write that both dcUsername and collab are empty.
@@ -214,6 +213,63 @@ const checkGWPGAEntry = async (collab, isGuaranteed, dcUsername, wallet) => {
         } else {
             const overallocatedSheet = document.sheetsByIndex[2];
             await overallocatedSheet.loadCells('E1:H2500');
+
+            /**
+             * for overallocated collabs, a lot of entries have no wallets, so dcUsername is the highest priority.
+             * if dcUsername + collab matches, we require them to add their wallet.
+             * LEVEL OF IMPORTANCE:
+             * 1. dcUsername
+             * 2. wallet
+             * 3. collab
+             * 4. role given
+             */
+            for (let i = 2; i < overallocatedSheet.rowCount; i++) {
+                const dcUsernameToCheck = overallocatedSheet.getCell(i, 4).value;
+                const walletToCheck = overallocatedSheet.getCell(i, 5).value;
+                const collabToCheck = overallocatedSheet.getCell(i, 6).value;
+
+                // sometimes the dcUsername field is null/empty, so we skip this row to not throw an error.
+                if (!dcUsernameToCheck) {
+                    continue;
+                }
+
+                // if dcUsername matches, we first check if wallet also matches.
+                if (dcUsernameToCheck.toLowerCase() === dcUsername.toLowerCase()) {
+                    dcUsernameMatches = true;
+
+                    // if wallet is empty, we will first check for the collab and see if it's empty too
+                    if (!walletToCheck) {
+                        // if collab is also empty, then we can assume that both wallet and collab fields are empty.
+                        if (!collabToCheck) {
+                            returnMessage = {
+                                walletMatches: false,
+                                dcUsernameMatches: true,
+                                collabMatches: false,
+                                message: 'wallet and collab fields null/empty',
+                            }
+                            break;
+                        // if collab is not empty, we will check if it matches.
+                        } else {
+                            // if collab matches, then we can assume that only the wallet field is empty.
+                            // in this case, we check for the role given field.
+                            if (collabToCheck.toLowerCase() === collab.toLowerCase()) {
+                                // if role given field is empty, we can assume that 1. dc username and collab matches but wallet is empty
+                                // returnMessage = {
+                                //     collabType: 'overallocated',
+                                //     walletMatches: false,
+                                //     dcUsernameMatches: true,
+                                //     collabMatches: true,
+                                //     row: i,
+                                //     wallet: wallet,
+                                //     dcUsername: dcUsername,
+                                //     collab: collab,
+                                //     message: 'wallet field null/empty',
+                                // }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         console.log(returnMessage);
@@ -227,4 +283,4 @@ const checkGWPGAEntry = async (collab, isGuaranteed, dcUsername, wallet) => {
     }
 }
 
-checkGWPGAEntry('BAYC Tan', true, 'asdasd#1234', '0x9Df8A3B6eef03082489449bB6bDDaf4EF61F9BeCsd');
+checkGWPGAEntry(null, false);
