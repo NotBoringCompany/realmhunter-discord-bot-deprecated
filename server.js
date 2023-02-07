@@ -1,12 +1,13 @@
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
+const backup = require('discord-backup');
 
-const { Client, GatewayIntentBits, Collection, InteractionType } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, InteractionType, MessageFlags } = require('discord.js');
 const claimGPWRoleGA = require('./commands/claimGPWRoleGA');
 const claimGPWRoleGAModal = require('./modals/claimGPWRoleGA');
 const chooseGPWCollab = require('./selectMenus/collabGPW');
-const { createBackup, fetchBackupInfo } = require('./commands/backup');
+const { createBackup, fetchBackupInfo, loadBackup, deleteBackup } = require('./commands/backup');
 const token = process.env.BOT_TOKEN;
 
 const client = new Client({
@@ -44,7 +45,7 @@ client.on('ready', c => {
 
 client.on('messageCreate', async (message) => {
 
-    if (message.content.toLowerCase() === '!backupserver') {
+    if (message.content.toLowerCase() === '!createbackup') {
         if (!message.member._roles.includes('956946650218237993')) {
             return;
         }
@@ -52,12 +53,79 @@ client.on('messageCreate', async (message) => {
         await createBackup(message);
     }
 
-    if (message.content.toLowerCase() === '!fetchbackupinfo') {
+    if (message.content.toLowerCase().startsWith('!fetchbackupinfo')) {
         if (!message.member._roles.includes('956946650218237993')) {
             return;
         }
 
-        await fetchBackupInfo(message, '1072283311394525184');
+        if (message.content.toLowerCase() === '!fetchbackupinfo') {
+            await message.channel.send('Please provide a backup ID.');
+            return;
+        }
+
+        const backupIdList = await backup.list();
+
+        if (backupIdList.length === 0) {
+            await message.channel.send('There are no backups.');
+            return;
+        }
+
+        for (let i = 0; i < backupIdList.length; i++) {
+            if (message.content.toLowerCase().includes(backupIdList[i])) {
+                await fetchBackupInfo(message, backupIdList[i]);
+                return;
+            }
+        }
+    }
+
+    if (message.content.toLowerCase().startsWith('!loadbackup')) {
+        if (!message.member._roles.includes('956946650218237993')) {
+            return;
+        }
+
+        if (message.content.toLowerCase() === '!loadbackup') {
+            await message.channel.send('Please provide a backup ID.');
+            return;
+        }
+
+        const backupIdList = await backup.list();
+
+        if (backupIdList.length === 0) {
+            await message.channel.send('There are no backups.');
+            return;
+        }
+
+        for (let i = 0; i < backupIdList.length; i++) {
+            if (message.content.toLowerCase().includes(backupIdList[i])) {
+                await loadBackup(message, backupIdList[i]);
+                return;
+            }
+        }
+    }
+
+    if (message.content.toLowerCase().startsWith('!deletebackup')) {
+        if (!message.member._roles.includes('956946650218237993')) {
+            return;
+        }
+
+        if (message.content.toLowerCase() === '!deletebackup') {
+            await message.channel.send('Please provide a backup ID.');
+            return;
+        }
+
+        const backupIdList = await backup.list();
+
+        if (backupIdList.length === 0) {
+            await message.channel.send('There are no backups.');
+            return;
+        }
+
+        for (let i = 0; i < backupIdList.length; i++) {
+            if (message.content.toLowerCase().includes(backupIdList[i])) {
+                await deleteBackup(message, backupIdList[i]);
+                return;
+            }
+        }
     }
 
     if (message.content.toLowerCase() === '!testroleaichima') {

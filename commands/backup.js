@@ -3,6 +3,7 @@ const { Message, EmbedBuilder } = require('discord.js');
 
 const createBackup = async (message) => {
     try {
+        await message.channel.send('Creating backup. It may take up to a few minutes.');
         await backup.create(message.guild).then(async (backupData) => {
             await message.channel.send(`Backup created. Backup ID: ${backupData.id}`);
         });
@@ -92,8 +93,24 @@ const loadBackup = async (message, backupId) => {
     }
 };
 
+const deleteBackup = async (message, backupId) => {
+    try {
+        if (!backupId) {
+            await message.channel.send('You must provide a backup ID.');
+        }
+
+        backup.remove(backupId).then(async () => {
+            await message.channel.send('Backup deleted successfully.');
+        });
+
+    } catch (err) {
+        await message.channel.send('An error occurred: ' + err);
+    }
+};
+
 module.exports = {
     createBackup,
     fetchBackupInfo,
-    loadBackup
+    loadBackup,
+    deleteBackup
 };
