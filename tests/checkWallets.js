@@ -93,39 +93,17 @@ const checkWallets = async () => {
         const duplicateEntries = [];
         const uniqueEntries = [];
 
-        const newEntries = uniqueEntries.filter(({ wallet }) => !allEntries.some((entry) => entry.wallet === wallet));
+        // check each entry in `allEntries`. if the wallet address doesn't exist in uniqueEntries yet, push this entry to `uniqueEntries`.
+        // otherwise, push to duplicateEntries.
+        allEntries.forEach((entry) => {
+            if (!uniqueEntries.some((uniqueEntry) => uniqueEntry.wallet === entry.wallet)) {
+                uniqueEntries.push(entry);
+            } else {
+                duplicateEntries.push(entry);
+            }
+        });
 
-        // allEntries.forEach((entry) => {
-        //     // check in unique entries if wallet of the entry matches the wallet of any of the unique entries
-        //     uniqueEntries.forEach((uniqueEntry) => {
-        //         if (uniqueEntry.wallet === entry.wallet) {
-        //             duplicateEntries.push(entry);
-        //         } else {
-        //             uniqueEntries.push(entry);
-        //         }
-        //     });
-        // });
-
-        console.log(newEntries.length);
-
-        // // after adding all wallets, we will remove all duplicates into another array. the unique ones go into 'uniqueWallets'.
-        // const duplicateWallets = [];
-        // const uniqueWallets = [];
-
-        // allWallets.forEach((wallet) => {
-        //     if (!uniqueWallets.includes(wallet)) {
-        //         uniqueWallets.push(wallet);
-        //     } else {
-        //         duplicateWallets.push(wallet);
-        //     }
-        // });
-
-        // console.log('Duplicate wallets: ', duplicateWallets.length);
-        // console.log('Unique wallets: ', uniqueWallets.length);
-
-        // const newDoc = await document.addSheet({ title: 'Duplicate Wallets' });
-
-        
+        return duplicateEntries;
     } catch (err) {
         throw err.message;
     }

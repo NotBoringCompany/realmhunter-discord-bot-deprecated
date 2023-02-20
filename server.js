@@ -44,7 +44,7 @@ client.on('ready', c => {
 });
 
 client.on('messageCreate', async (message) => {
-
+    // CREATE BACKUP
     if (message.content.toLowerCase() === '!createbackup') {
         if (!message.member._roles.includes('956946650218237993')) {
             return;
@@ -53,6 +53,7 @@ client.on('messageCreate', async (message) => {
         await createBackup(message);
     }
 
+    // FETCH BACKUP
     if (message.content.toLowerCase().startsWith('!fetchbackupinfo')) {
         if (!message.member._roles.includes('956946650218237993')) {
             return;
@@ -78,6 +79,7 @@ client.on('messageCreate', async (message) => {
         }
     }
 
+    // LOAD BACKUP
     if (message.content.toLowerCase().startsWith('!loadbackup')) {
         if (!message.member._roles.includes('956946650218237993')) {
             return;
@@ -103,6 +105,7 @@ client.on('messageCreate', async (message) => {
         }
     }
 
+    // DELETE BACKUP
     if (message.content.toLowerCase().startsWith('!deletebackup')) {
         if (!message.member._roles.includes('956946650218237993')) {
             return;
@@ -128,7 +131,8 @@ client.on('messageCreate', async (message) => {
         }
     }
 
-    if (message.content.toLowerCase() === '!testroleaichima') {
+    // TEST GIVE ROLE
+    if (message.content.toLowerCase() === '!testgiverole') {
         // must be from `The Creators`.
         if (!message.member._roles.includes('956946650218237993')) {
             return;
@@ -138,6 +142,7 @@ client.on('messageCreate', async (message) => {
         await message.member.roles.add('1047902832197636136');
     }
 
+    // TEST MENU
     if (message.content.toLowerCase() === '!testmenu') {
         // must be from `The Creators`.
         if (!message.member._roles.includes('956946650218237993')) {

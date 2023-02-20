@@ -13,12 +13,12 @@ const chooseGPWCollabMenus = async () => {
         const slicedOverallocatedProjects = [];
         // slice the projects array into chunks of 25 to give off the amount of menus we need.
         for (let i = 0; i < guaranteedProjects.length; i += 25) {
-            const chunk = guaranteedProjects.slice(i , i + 25);
+            const chunk = guaranteedProjects.slice(i, i + 25);
             slicedGuaranteedProjects.push(chunk);
         }
 
         for (let i = 0; i < overallocatedProjects.length; i += 25) {
-            const chunk = overallocatedProjects.slice(i , i + 25);
+            const chunk = overallocatedProjects.slice(i, i + 25);
             slicedOverallocatedProjects.push(chunk);
         }
 
@@ -32,10 +32,10 @@ const chooseGPWCollabMenus = async () => {
                         .setCustomId(`guaranteedGPWMenu${i}`)
                         .setPlaceholder('Choose a collab')
                         .addOptions(
-                            slicedGuaranteedProjects[i].map(project => {
+                            slicedGuaranteedProjects[i].map((project) => {
                                 return {
                                     label: project,
-                                    value: project
+                                    value: project,
                                 }
                             }),
                         ),
@@ -50,10 +50,10 @@ const chooseGPWCollabMenus = async () => {
                         .setCustomId(`overallocatedGPWMenu${i}`)
                         .setPlaceholder('Choose a collab')
                         .addOptions(
-                            slicedOverallocatedProjects[i].map(project => {
+                            slicedOverallocatedProjects[i].map((project) => {
                                 return {
                                     label: project,
-                                    value: project
+                                    value: project,
                                 }
                             }),
                         ),
@@ -63,11 +63,11 @@ const chooseGPWCollabMenus = async () => {
 
         return {
             guaranteedCollabMenus: guaranteedCollabMenus,
-            overallocatedCollabMenus: overallocatedCollabMenus
-        }
+            overallocatedCollabMenus: overallocatedCollabMenus,
+        };
     } catch (err) {
         throw err;
     }
-}
+};
 
 module.exports = chooseGPWCollabMenus;
