@@ -14,8 +14,8 @@ const createBackup = async (message) => {
 
 /**
  * 
- * @param {Message} message 
- * @param {string} backupId 
+ * @param {Message} message
+ * @param {string} backupId
  */
 const fetchBackupInfo = async (message, backupId) => {
     try {
