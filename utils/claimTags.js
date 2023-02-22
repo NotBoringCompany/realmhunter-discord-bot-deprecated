@@ -4,11 +4,11 @@ const { parseJSON } = require('./jsonParser');
 
 /**
  * `claimTags` allows Hunters to claim either 50 or 60 tags (depending on their role and enter date) once.
- * @param {String} username the Discord username of the user.
+ * @param {String} userId the Discord user ID of the user (unique, so just in case for extra checks).
  * @param {String} role the role of the user.
  * @param {Number} joinDate the join date of the user (in unix).
  */
-const claimTags = async (username, role, joinDate) => {
+const claimTags = async (userId, role, joinDate) => {
     try {
         await Moralis.start({
             serverUrl: process.env.MORALIS_SERVERURL,
@@ -20,14 +20,14 @@ const claimTags = async (username, role, joinDate) => {
         const rhDiscordDB = new RHDiscordDB();
 
         const RHDiscord = new Moralis.Query('RHDiscord');
-        RHDiscord.equalTo('username', username);
+        RHDiscord.equalTo('userId', userId);
 
         const rawQuery = await RHDiscord.first({ useMasterKey: true });
 
         // if `rawQuery` is undefined or empty, that means that the user hasn't claimed their tags yet or doesn't exist in the DB.
         // in this case, we will allow them to claim their tags.
         if (!rawQuery) {
-            rhDiscordDB.set('username', username);
+            rhDiscordDB.set('userId', userId);
 
             if (role === 'Hunter') {
                 // if the user has the Hunter role and joined before 1 January 2023 00:00 GMT, they will get 60 tags.
@@ -80,9 +80,9 @@ const claimTags = async (username, role, joinDate) => {
 
 /**
  * `claimExtraTags` allows Hunters to claim 10 extra tags once a day if they provide fanart, threads, memes or anything interactive to the community.
- * @param {String} username the Discord username of the user.
+ * @param {String} userId the Discord user ID of the user.
  */
-const claimExtraTags = async (username) => {
+const claimExtraTags = async (userId) => {
     try {
         await Moralis.start({
             serverUrl: process.env.MORALIS_SERVERURL,
@@ -94,13 +94,13 @@ const claimExtraTags = async (username) => {
         const rhDiscordDB = new RHDiscordDB();
 
         const RHDiscord = new Moralis.Query('RHDiscord');
-        RHDiscord.equalTo('username', username);
+        RHDiscord.equalTo('userId', userId);
 
         const rawQuery = await RHDiscord.first({ useMasterKey: true });
         // if `rawQuery` is undefined or empty, that means that the user doesn't exist in the DB. we'll create a user instance for them and
         // gift them 10 hunter tags.
         if (!rawQuery) {
-            rhDiscordDB.set('username', username);
+            rhDiscordDB.set('userId', userId);
             rhDiscordDB.set('hunterTags', 10);
             rhDiscordDB.set('lastClaimedExtraTags', Math.floor(new Date().getTime() / 1000));
             await rhDiscordDB.save(null, { useMasterKey: true });

@@ -7,6 +7,7 @@ const {
     hunterGamesFinished,
 } = require('../embeds/hunterGames');
 const { delay } = require('../utils/delay');
+const { claimHunterPoints } = require('../utils/hunterGames');
 
 const hunterGames = async (client, message) => {
     try {
@@ -58,6 +59,7 @@ const hunterGames = async (client, message) => {
                         // if participant died when there's 20 people left (example), then he'll be at position 20.
                         diedAtPosition: 0,
                     };
+
                     participants.push(participant);
                 // if that the participant is already in the list, we make sure
                 // that the participant has the default values before the game starts.
@@ -72,6 +74,7 @@ const hunterGames = async (client, message) => {
                 }
             }
         });
+
 
         collector.on('remove', (reaction, user) => {
             // if user removed their reaction, we remove them from the participants list.
@@ -304,16 +307,18 @@ const hunterGames = async (client, message) => {
         console.log('Winner:', participants[winnerIndex]);
         /**
          * THE LOGIC FOR THE WINNER LEADERBOARD IS AS FOLLOWS:
-         * IF < 25 PARTICIPANTS, TOP 1 EARNS 10 DISCORD POINTS.
-         * IF 26 - 50 PARTICIPANTS, TOP 3 EARNS 14, 12, 10 DISCORD POINTS.
-         * IF 51 - 75 PARTICIPANTS, TOP 5 EARNS 16, 14, 12, 10, 9 DISCORD POINTS.
-         * IF 76 - 125 PARTICIPANTS, TOP 7 EARNS 17, 15, 14, 12, 10, 9, 8 DISCORD POINTS.
-         * IF 126 - 200 PARTICIPANTS, TOP 10 EARNS 19, 18, 17, 15, 13, 12, 10, 9, 8, 7 DISCORD POINTS.
-         * IF 201 - 300 PARTICIPANTS, TOP 15 EARNS 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6 DISCORD POINTS.
-         * IF > 301 PARTICIPANTS, TOP 20 EARNS 25, 23, 21, 20, 19, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3 DISCORD POINTS.
+         * IF < 25 PARTICIPANTS, TOP 1 EARNS 10 REALM POINTS.
+         * IF 26 - 50 PARTICIPANTS, TOP 3 EARNS 14, 12, 10 REALM POINTS.
+         * IF 51 - 75 PARTICIPANTS, TOP 5 EARNS 16, 14, 12, 10, 9 REALM POINTS.
+         * IF 76 - 125 PARTICIPANTS, TOP 7 EARNS 17, 15, 14, 12, 10, 9, 8 REALM POINTS.
+         * IF 126 - 200 PARTICIPANTS, TOP 10 EARNS 19, 18, 17, 15, 13, 12, 10, 9, 8, 7 REALM POINTS.
+         * IF 201 - 300 PARTICIPANTS, TOP 15 EARNS 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6 REALM POINTS.
+         * IF > 301 PARTICIPANTS, TOP 20 EARNS 25, 23, 21, 20, 19, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3 REALM POINTS.
          */
         let leaderboardAsString = '';
         let ranking = 1;
+        // we need to store the winners' data into an array of objects to reward them with the Realm Points.
+        const winnersData = [];
         if (startingParticipantsCount <= 25) {
             // only 1 winner.
             leaderboardAsString += `1. ${participants[winnerIndex].usertag} - 10 Realm Points.`;
@@ -322,7 +327,15 @@ const hunterGames = async (client, message) => {
             const points = [14, 12, 10];
             const winners = participants.filter((p) => p.diedAtPosition <= 3);
             const sortedWinners = winners.sort((a, b) => a.diedAtPosition - b.diedAtPosition);
+
             sortedWinners.forEach((winner) => {
+                // first, we need to store the winners' data into an array of objects to reward them with the Realm Points.
+                const winnerData = {
+                    userId: winner.userId,
+                    realmPointsEarned: points[ranking - 1],
+                };
+                winnersData.push(winnerData);
+                // then, we update the leaderboard string.
                 leaderboardAsString += `${ranking}. ${winner.usertag} - ${points[ranking - 1]} Realm Points.\n`;
                 ranking++;
             });
@@ -332,6 +345,12 @@ const hunterGames = async (client, message) => {
             const winners = participants.filter((p) => p.diedAtPosition <= 5);
             const sortedWinners = winners.sort((a, b) => a.diedAtPosition - b.diedAtPosition);
             sortedWinners.forEach((winner) => {
+                // first, we need to store the winners' data into an array of objects to reward them with the Realm Points.
+                const winnerData = {
+                    userId: winner.userId,
+                    realmPointsEarned: points[ranking - 1],
+                };
+                winnersData.push(winnerData);
                 leaderboardAsString += `${ranking}. ${winner.usertag} - ${points[ranking - 1]} Realm Points.\n`;
                 ranking++;
             });
@@ -341,6 +360,12 @@ const hunterGames = async (client, message) => {
             const winners = participants.filter((p) => p.diedAtPosition <= 7);
             const sortedWinners = winners.sort((a, b) => a.diedAtPosition - b.diedAtPosition);
             sortedWinners.forEach((winner) => {
+                // first, we need to store the winners' data into an array of objects to reward them with the Realm Points.
+                const winnerData = {
+                    userId: winner.userId,
+                    realmPointsEarned: points[ranking - 1],
+                };
+                winnersData.push(winnerData);
                 leaderboardAsString += `${ranking}. ${winner.usertag} - ${points[ranking - 1]} Realm Points.\n`;
                 ranking++;
             });
@@ -350,6 +375,12 @@ const hunterGames = async (client, message) => {
             const winners = participants.filter((p) => p.diedAtPosition <= 10);
             const sortedWinners = winners.sort((a, b) => a.diedAtPosition - b.diedAtPosition);
             sortedWinners.forEach((winner) => {
+                // first, we need to store the winners' data into an array of objects to reward them with the Realm Points.
+                const winnerData = {
+                    userId: winner.userId,
+                    realmPointsEarned: points[ranking - 1],
+                };
+                winnersData.push(winnerData);
                 leaderboardAsString += `${ranking}. ${winner.usertag} - ${points[ranking - 1]} Realm Points.\n`;
                 ranking++;
             });
@@ -359,6 +390,12 @@ const hunterGames = async (client, message) => {
             const winners = participants.filter((p) => p.diedAtPosition <= 15);
             const sortedWinners = winners.sort((a, b) => a.diedAtPosition - b.diedAtPosition);
             sortedWinners.forEach((winner) => {
+                // first, we need to store the winners' data into an array of objects to reward them with the Realm Points.
+                const winnerData = {
+                    userId: winner.userId,
+                    realmPointsEarned: points[ranking - 1],
+                };
+                winnersData.push(winnerData);
                 leaderboardAsString += `${ranking}. ${winner.usertag} - ${points[ranking - 1]} Realm Points.\n`;
                 ranking++;
             });
@@ -368,6 +405,12 @@ const hunterGames = async (client, message) => {
             const winners = participants.filter((p) => p.diedAtPosition <= 20);
             const sortedWinners = winners.sort((a, b) => a.diedAtPosition - b.diedAtPosition);
             sortedWinners.forEach((winner) => {
+                // first, we need to store the winners' data into an array of objects to reward them with the Realm Points.
+                const winnerData = {
+                    userId: winner.userId,
+                    realmPointsEarned: points[ranking - 1],
+                };
+                winnersData.push(winnerData);
                 leaderboardAsString += `${ranking}. ${winner.usertag} - ${points[ranking - 1]} Realm Points.\n`;
                 ranking++;
             });
@@ -375,6 +418,9 @@ const hunterGames = async (client, message) => {
         const winnerEmbed = await client.channels.cache.get('1077197901517836348').send({
             embeds: [hunterGamesFinished(leaderboardAsString)],
         });
+
+        // now, we need to reward the winners with the Realm Points.
+        await claimHunterPoints(winnersData);
     } catch (err) {
         throw err;
     }
