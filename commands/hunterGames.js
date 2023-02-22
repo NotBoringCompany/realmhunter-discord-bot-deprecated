@@ -7,7 +7,7 @@ const {
     hunterGamesFinished,
 } = require('../embeds/hunterGames');
 const { delay } = require('../utils/delay');
-const { claimHunterPoints } = require('../utils/hunterGames');
+const { claimHunterPoints, claimRealmPoints } = require('../utils/hunterGames');
 
 const hunterGames = async (client, message) => {
     try {
@@ -85,39 +85,39 @@ const hunterGames = async (client, message) => {
             });
         });
 
-        // wait 2 minutes before updating and reminding the game start time.
-        await delay(120000);
-        const firstUpdate = await client.channels.cache.get('1077197901517836348').send({
-            embeds: [updateHunterGamesMessage(180, 'Buckle up, Hunters!')],
-        });
+        // // wait 2 minutes before updating and reminding the game start time.
+        // await delay(120000);
+        // const firstUpdate = await client.channels.cache.get('1077197901517836348').send({
+        //     embeds: [updateHunterGamesMessage(180, 'Buckle up, Hunters!')],
+        // });
 
-        // wait another 2 minutes (total 4 minutes) to remind that the battle will start in 1 minute.
-        await delay(12000);
-        await firstUpdate.delete();
-        // we also delete the first update message
-        const secondUpdate = await client.channels.cache.get('1077197901517836348').send({
-            embeds: [updateHunterGamesMessage(60, '1 minute left. Getting excited yet?')],
-        });
+        // // wait another 2 minutes (total 4 minutes) to remind that the battle will start in 1 minute.
+        // await delay(12000);
+        // await firstUpdate.delete();
+        // // we also delete the first update message
+        // const secondUpdate = await client.channels.cache.get('1077197901517836348').send({
+        //     embeds: [updateHunterGamesMessage(60, '1 minute left. Getting excited yet?')],
+        // });
 
-        // wait another 30 seconds (total 4 mins 30 secs) to remind that the battle will start in 30 seconds.
-        await delay(30000);
-        await secondUpdate.delete();
-        const thirdUpdate = await client.channels.cache.get('1077197901517836348').send({
-            embeds: [updateHunterGamesMessage(30, '30 seconds left. Who will be the lucky winner?')],
-        });
+        // // wait another 30 seconds (total 4 mins 30 secs) to remind that the battle will start in 30 seconds.
+        // await delay(30000);
+        // await secondUpdate.delete();
+        // const thirdUpdate = await client.channels.cache.get('1077197901517836348').send({
+        //     embeds: [updateHunterGamesMessage(30, '30 seconds left. Who will be the lucky winner?')],
+        // });
 
-        // wait another 20 seconds (total 4 mins 50 secs) to remind that the battle will start in 10 seconds.
-        await delay(20000);
-        await thirdUpdate.delete();
-        const fourthUpdate = await client.channels.cache.get('1077197901517836348').send({
-            embeds: [updateHunterGamesMessage(10, '10 seconds left. Last chance to join in the fun!')],
-        });
+        // // wait another 20 seconds (total 4 mins 50 secs) to remind that the battle will start in 10 seconds.
+        // await delay(20000);
+        // await thirdUpdate.delete();
+        // const fourthUpdate = await client.channels.cache.get('1077197901517836348').send({
+        //     embeds: [updateHunterGamesMessage(10, '10 seconds left. Last chance to join in the fun!')],
+        // });
 
         // after 10 more seconds, the 5 imuntes timer will run out and the game will start.
         await delay(10000);
         // before the start of the game, we will check if there are enough participants.
+        const startingParticipants = participants;
         const startingParticipantsCount = participants.length;
-        console.log('startingParticipantsCount: ', startingParticipantsCount);
 
         if (startingParticipantsCount <= 1) {
             await client.channels.cache.get('1077197901517836348').send({
@@ -131,16 +131,19 @@ const hunterGames = async (client, message) => {
             embeds: [hunterGamesStartMessage(startingParticipantsCount)],
         });
 
-        // the initial `participantsLeft` will equal the `participants` array.
+        // at the start, `participantsLeft` will equal the `startingParticipants` array (which equals the `participants` array)
         // however, as more participants 'get killed', the `participantsLeft` array will always reduce in length.
         // it will keep reducing until there's 1 participant left.
-        const participantsLeft = participants;
+        const participantsLeft = startingParticipants;
         let currentRound = 1;
 
-        // hunter games logic starts here. as long as there is still at least 1 participant, we continue the game.
-        for (let i = participantsLeft.length; i > 0;) {
+        console.log('Initial participants left: ', participantsLeft);
+
+        // hunter games logic starts here. as long as there is still at least 1 participant left, we continue the game.
+        while (participantsLeft.length > 0) {
             // if there's only 1 player left, they will win and we end the game.
             if (participantsLeft.length === 1) {
+                console.log('1 player left at round: ', currentRound);
                 break;
             }
 
@@ -149,19 +152,19 @@ const hunterGames = async (client, message) => {
             /**
              * WE WILL FIRST DO A DICE ROLL TO DETERMINE HOW MANY PARTICIPANTS WILL GET ELIMINATED IN EACH ROUND.
              * DICE ROLL LOGIC:
-             * <= 15 PARTICIPANTS: ROLL 2-SIDED DICE.
-             * 16-30 PARTICIPANTS: ROLL 4-SIDED DICE.
-             * 31-60 PARTICIPANTS: ROLL 6-SIDED DICE.
+             * <= 15 PARTICIPANTS: ROLL 3-SIDED DICE.
+             * 16-30 PARTICIPANTS: ROLL 5-SIDED DICE.
+             * 31-60 PARTICIPANTS: ROLL 7-SIDED DICE.
              * 61-120 PARTICIPANTS: ROLL 10-SIDED DICE.
              * 121-300 PARTICIPANTS: ROLL 15-SIDED DICE.
              * >300 PARTICIPANTS: ROLL 20-SIDED DICE.
              */
             if (participantsLeft.length <= 15) {
-                diceRoll = Math.floor(Math.random() * 2) + 1;
+                diceRoll = Math.floor(Math.random() * 3) + 1;
             } else if (participantsLeft.length <= 30) {
-                diceRoll = Math.floor(Math.random() * 4) + 1;
+                diceRoll = Math.floor(Math.random() * 5) + 1;
             } else if (participantsLeft.length <= 60) {
-                diceRoll = Math.floor(Math.random() * 6) + 1;
+                diceRoll = Math.floor(Math.random() * 7) + 1;
             } else if (participantsLeft.length <= 120) {
                 diceRoll = Math.floor(Math.random() * 10) + 1;
             } else if (participantsLeft.length <= 300) {
@@ -173,8 +176,8 @@ const hunterGames = async (client, message) => {
             // depending on the dice roll, we will determine the participants that will have to 'fight each other' in this round.
             const participantsToFight = [];
 
-            // if there are less participants than the dice roll, we will only need to include the remaining participants.
-            if (participantsLeft.length < diceRoll) {
+            // if there are less participants (or equal to) than the dice roll, we will only need to include the remaining participants.
+            if (participantsLeft.length <= diceRoll) {
                 console.log('less participants than dice roll');
                 participantsLeft.forEach((participant) => {
                     participantsToFight.push(participant);
@@ -209,6 +212,9 @@ const hunterGames = async (client, message) => {
                         const diceRoll = Math.floor(Math.random() * 2) + 1;
                         const participantIndex = participantsToFight[0].index;
 
+                        console.log('Dice roll! Participants left: ', participantsLeft);
+                        console.log('Participants left to fight: ', participantsToFight);
+
                         // if the dice rolls a 1, they die.
                         if (diceRoll === 1) {
                             // we do 3 things:
@@ -217,8 +223,8 @@ const hunterGames = async (client, message) => {
                             // 3. remove participant from `participantsToFight` array.
                             battleMessages.push(`💀 | ${participantsToFight[0].usertag} commited suicide.`);
 
-                            participants[participantIndex].hasDied = true;
-                            participants[participantIndex].diedAtPosition = participantsLeft.length;
+                            startingParticipants[participantIndex].hasDied = true;
+                            startingParticipants[participantIndex].diedAtPosition = participantsLeft.length;
                             participantsToFight.splice(0, 1);
                             participantsLeft.splice(participantIndex, 1);
                         // if dice rolls a 2, they survive (nothing happened essentially)
@@ -229,7 +235,7 @@ const hunterGames = async (client, message) => {
                         }
                     }
                 // if there are still multiple participants in the current round still, we will let them fight.
-                } else {
+                } else if (participantsToFight.length >= 2) {
                     const diceRoll = Math.floor(Math.random() * 2) + 1;
                     // if dice rolls a 1, participant 1 'kills' participant 2.
                     if (diceRoll === 1) {
@@ -243,10 +249,10 @@ const hunterGames = async (client, message) => {
                         // static battle message. will be updated to dynamic later on.
                         battleMessages.push(`🔪 | ${participantsToFight[0].usertag} killed ${participantsToFight[1].usertag}.`);
 
-                        const winner = participants[winnerIndex];
+                        const winner = startingParticipants[winnerIndex];
                         winner.kills += 1;
 
-                        const loser = participants[loserIndex];
+                        const loser = startingParticipants[loserIndex];
                         loser.hasDied = true;
                         loser.diedAtPosition = participantsLeft.length;
                         // essentially splicing the first 2 indexes (which are the current 2 participants that fought each other)
@@ -264,10 +270,10 @@ const hunterGames = async (client, message) => {
                         // static battle message. will be updated to dynamic later on.
                         battleMessages.push(`🔪 | ${participantsToFight[1].usertag} killed ${participantsToFight[0].usertag}.`);
 
-                        const winner = participants[winnerIndex];
+                        const winner = startingParticipants[winnerIndex];
                         winner.kills += 1;
 
-                        const loser = participants[loserIndex];
+                        const loser = startingParticipants[loserIndex];
                         loser.hasDied = true;
                         loser.diedAtPosition = participantsLeft.length;
                         // essentially splicing the first 2 indexes (which are the current 2 participants that fought each other)
@@ -276,7 +282,6 @@ const hunterGames = async (client, message) => {
                     }
                 }
             }
-
             // once there are no more participants in the `participantsToFight` array, we will compile the current round's
             // battle messages into a single string.
             let battleMessageString = '';
@@ -295,16 +300,22 @@ const hunterGames = async (client, message) => {
             await delay(5000);
             currentRound++;
         }
-
         console.log('1 participant left. Game over!');
 
-        const winner = participantsLeft[0];
-        // we need to get the index and change the `diedToPosition` to 1.
-        // (essentially, they didn't 'die', but it's to query for the leaderboard.)
-        const winnerIndex = winner.index;
-        participants[winnerIndex].diedToPosition = 1;
+        // const winner = participantsLeft[0];
 
-        console.log('Winner:', participants[winnerIndex]);
+        // console.log(winner);
+
+        // // we need to get the index and change the `diedAtPosition` to 1.
+        // // (essentially, they didn't 'die', but it's to query for the leaderboard.)
+        // const winnerIndex = winner.index;
+
+        // console.log('winner index: ', winnerIndex);
+
+        // console.log('startingParticipants: ', startingParticipants);
+        // console.log('winner: ', startingParticipants[winnerIndex]);
+        // startingParticipants[winnerIndex].diedAtPosition = 1;
+
         /**
          * THE LOGIC FOR THE WINNER LEADERBOARD IS AS FOLLOWS:
          * IF < 25 PARTICIPANTS, TOP 1 EARNS 10 REALM POINTS.
@@ -320,12 +331,20 @@ const hunterGames = async (client, message) => {
         // we need to store the winners' data into an array of objects to reward them with the Realm Points.
         const winnersData = [];
         if (startingParticipantsCount <= 25) {
+            const winner = startingParticipants.filter((p) => p.diedAtPosition === 0)[0];
+            // 1 winner. we store the data to the winnersData array.
+            const winnerData = {
+                userId: winner.userId,
+                realmPointsEarned: 10,
+            };
+            winnersData.push(winnerData);
+
             // only 1 winner.
-            leaderboardAsString += `1. ${participants[winnerIndex].usertag} - 10 Realm Points.`;
+            leaderboardAsString += `1. ${winner.usertag} - 10 Realm Points.`;
         } else if (startingParticipantsCount <= 50) {
             // 3 winners
             const points = [14, 12, 10];
-            const winners = participants.filter((p) => p.diedAtPosition <= 3);
+            const winners = startingParticipants.filter((p) => p.diedAtPosition <= 3);
             const sortedWinners = winners.sort((a, b) => a.diedAtPosition - b.diedAtPosition);
 
             sortedWinners.forEach((winner) => {
@@ -342,7 +361,7 @@ const hunterGames = async (client, message) => {
         } else if (startingParticipantsCount <= 75) {
             // 5 winners
             const points = [16, 14, 12, 10, 9];
-            const winners = participants.filter((p) => p.diedAtPosition <= 5);
+            const winners = startingParticipants.filter((p) => p.diedAtPosition <= 5);
             const sortedWinners = winners.sort((a, b) => a.diedAtPosition - b.diedAtPosition);
             sortedWinners.forEach((winner) => {
                 // first, we need to store the winners' data into an array of objects to reward them with the Realm Points.
@@ -357,7 +376,7 @@ const hunterGames = async (client, message) => {
         } else if (startingParticipantsCount <= 125) {
             // 7 winners
             const points = [17, 15, 14, 12, 10, 9, 8];
-            const winners = participants.filter((p) => p.diedAtPosition <= 7);
+            const winners = startingParticipants.filter((p) => p.diedAtPosition <= 7);
             const sortedWinners = winners.sort((a, b) => a.diedAtPosition - b.diedAtPosition);
             sortedWinners.forEach((winner) => {
                 // first, we need to store the winners' data into an array of objects to reward them with the Realm Points.
@@ -372,7 +391,7 @@ const hunterGames = async (client, message) => {
         } else if (startingParticipantsCount <= 200) {
             // 10 winners
             const points = [19, 18, 17, 15, 13, 12, 10, 9, 8, 7];
-            const winners = participants.filter((p) => p.diedAtPosition <= 10);
+            const winners = startingParticipants.filter((p) => p.diedAtPosition <= 10);
             const sortedWinners = winners.sort((a, b) => a.diedAtPosition - b.diedAtPosition);
             sortedWinners.forEach((winner) => {
                 // first, we need to store the winners' data into an array of objects to reward them with the Realm Points.
@@ -387,7 +406,7 @@ const hunterGames = async (client, message) => {
         } else if (startingParticipantsCount <= 300) {
             // 15 winners
             const points = [20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6];
-            const winners = participants.filter((p) => p.diedAtPosition <= 15);
+            const winners = startingParticipants.filter((p) => p.diedAtPosition <= 15);
             const sortedWinners = winners.sort((a, b) => a.diedAtPosition - b.diedAtPosition);
             sortedWinners.forEach((winner) => {
                 // first, we need to store the winners' data into an array of objects to reward them with the Realm Points.
@@ -402,7 +421,7 @@ const hunterGames = async (client, message) => {
         } else {
             // 20 winners
             const points = [25, 23, 21, 20, 19, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3];
-            const winners = participants.filter((p) => p.diedAtPosition <= 20);
+            const winners = startingParticipants.filter((p) => p.diedAtPosition <= 20);
             const sortedWinners = winners.sort((a, b) => a.diedAtPosition - b.diedAtPosition);
             sortedWinners.forEach((winner) => {
                 // first, we need to store the winners' data into an array of objects to reward them with the Realm Points.
@@ -420,7 +439,7 @@ const hunterGames = async (client, message) => {
         });
 
         // now, we need to reward the winners with the Realm Points.
-        await claimHunterPoints(winnersData);
+        await claimRealmPoints(winnersData);
     } catch (err) {
         throw err;
     }

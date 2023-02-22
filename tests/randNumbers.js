@@ -48,13 +48,20 @@ const testForLoop = () => {
 
 const testWhile = () => {
     let num = 6;
+    let toAdd = ['hi', 'yes'];
 
     const arr = [];
 
-    while (arr.length < num) {
-        arr.push('hey');
-        console.log('added once');
+    const diceRoll = 2;
+
+    while (arr.length < diceRoll) {
+        const randomParticipant = toAdd[Math.floor(Math.random() * toAdd.length)];
+        if (!arr.includes(randomParticipant)) {
+            arr.push(randomParticipant);
+        }
     }
+
+    console.log(arr);
 }
 
 const testArr = () => {
@@ -65,4 +72,12 @@ const testArr = () => {
     console.log('spliced: ', array);
 }
 
-testArr();
+const testIf = () => {
+    const num = 2;
+
+    const arr = ['0', '1'];
+
+    console.log(arr.length);
+}
+
+testIf();
