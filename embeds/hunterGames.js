@@ -31,10 +31,26 @@ const hunterGamesBattle = (round, battleMessage, participantsLeftCount) => {
         );
 };
 
+const hunterGamesNoParticipants = () => {
+    return new EmbedBuilder()
+        .setColor(0x0099FF)
+        .setTitle(`Hunter Games cancelled.`)
+        .setDescription(`Not enough Hunters participated.`);
+};
+
+const hunterGamesFinished = (leaderboard) => {
+    return new EmbedBuilder()
+        .setColor(0x0099FF)
+        .setTitle(`Hunter Games completed.`)
+        .setDescription('Winners: \n' + leaderboard);
+};
+
 module.exports = {
     hunterGamesMessage,
     updateHunterGamesMessage,
     hunterGamesStartMessage,
     hunterGamesBattle,
+    hunterGamesNoParticipants,
+    hunterGamesFinished,
 };
 

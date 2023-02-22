@@ -1,10 +1,14 @@
-const { hunterGamesMessage, updateHunterGamesMessage, hunterGamesStartMessage, hunterGamesBattle } = require('../embeds/hunterGames');
+const {
+    hunterGamesMessage,
+    updateHunterGamesMessage,
+    hunterGamesStartMessage,
+    hunterGamesBattle,
+    hunterGamesNoParticipants,
+    hunterGamesFinished,
+} = require('../embeds/hunterGames');
 const { delay } = require('../utils/delay');
 
-const startHunterGames = async (
-        client,
-        message,
-    ) => {
+const hunterGames = async (client, message) => {
     try {
         // the first step is to have an embed of the wild NBMon in #test-hunter-games.
         const showHunterGames = await client.channels.cache.get('1077197901517836348').send({
@@ -78,76 +82,65 @@ const startHunterGames = async (
             });
         });
 
-        // wait 2 minutes before updating and reminding.
-        await delay(1200);
-        const firstUpdate = await client.channels.cache.get('1077197901517836348').send({
-            embeds: [updateHunterGamesMessage(180, 'Buckle up Hunters!')],
-        });
-
-        // wait another 2 mins (total 4 minutes) to remind that the battle will start in 1 minute
-        // and delete the first update message.
-        await delay(1200);
-        await firstUpdate.delete();
-        const secondUpdate = await client.channels.cache.get('1077197901517836348').send({
-            embeds: [updateHunterGamesMessage(60, 'Getting excited yet?')],
-        });
-
-        // wait another 30 seconds (total 4 mins 30 seconds) to remind that the battle will start in 30 seconds
-        // and delete the second update message.
+        ////////// WILL CHANGE TO MULTIPLE UPDATES. FOR TESTING PURPOSES, IT WILL ONLY BE ONCE RIGHT NOW.
         await delay(3000);
-        await secondUpdate.delete();
-        const thirdUpdate = await client.channels.cache.get('1077197901517836348').send({
-            embeds: [updateHunterGamesMessage(30, 'Who will be the lucky winner?')],
+        const hunterGamesUpdate = await client.channels.cache.get('1077197901517836348').send({
+            embeds: [updateHunterGamesMessage(5, '5 seconds left!')],
         });
 
-        // wait another 20 seconds (total 4 mins 50 seconds) to remind that the battle will start in 10 seconds
-        // and delete the third update message.
-        await delay(2000);
-        await thirdUpdate.delete();
-        const fourthUpdate = await client.channels.cache.get('1077197901517836348').send({
-            embeds: [updateHunterGamesMessage(10, 'Last chance to join in the fun!!!')],
-        });
+        await delay(5000);
 
-        /// after 10 more seconds, the 5 minutes timer will run out and the game will start.
-        await delay(1000);
-        // we check the amount of participants as this will impact the rewards and the number of rounds.
+        // before the start of the game, we will check if there are enough participants.
         const startingParticipantsCount = participants.length;
-        // add the start message to show amount of participants.
-        const hunterGamesStart = await client.channels.cache.get('1077197901517836348').send({
+
+        console.log('startingParticipantsCount: ', startingParticipantsCount);
+
+        if (startingParticipantsCount <= 1) {
+            await client.channels.cache.get('1077197901517836348').send({
+                embeds: [hunterGamesNoParticipants()],
+            });
+            return;
+        }
+
+        // start message showing number of participants.
+        const startHunterGames = await client.channels.cache.get('1077197901517836348').send({
             embeds: [hunterGamesStartMessage(startingParticipantsCount)],
         });
 
-        // the initial `participantsLeftCount` will equal startingParticipants. However, as the game progresses,
-        // more Hunters will get killed. This will be updated after each round.
-        let participantsLeftCount = startingParticipantsCount;
-        // the initial `participantsLeft` will equal the `participants` array. However, as the game progresses,
-        // more Hunters will get killed. This will be updated after each round.
+        // the initial `participantsLeft` will equal the `participants` array.
+        // however, as more participants 'get killed', the `participantsLeft` array will always reduce in length.
+        // it will keep reducing until there's 1 participant left.
         const participantsLeft = participants;
+        let currentRound = 1;
 
-        // hunter games logic starts here. as long as participant count is more than 1, we will continue the game.
-        for (let i = participantsLeftCount; i >= 1;) {
-            // the current round. will be updated after each round finishes.
-            let currentRound = 1;
+        // hunter games logic starts here. as long as there is still at least 1 participant, we continue the game.
+        for (let i = participantsLeft.length; i > 0;) {
+            // if there's only 1 player left, they will win and we end the game.
+            if (participantsLeft.length === 1) {
+                break;
+            }
+
             let diceRoll;
+
             /**
              * WE WILL FIRST DO A DICE ROLL TO DETERMINE HOW MANY PARTICIPANTS WILL GET ELIMINATED IN EACH ROUND.
-             * THE LOGIC OF THE DICE ROLL GOES AS FOLLOWS:
-             * < 15 PLAYERS: ROLL 2-SIDED DICE.
-             * 16-30 PLAYERS: ROLL 4-SIDED DICE.
-             * 31-60 PLAYERS: ROLL 6-SIDED DICE.
-             * 61-120 PLAYERS: ROLL 10-SIDED DICE.
-             * 121-300 PLAYERS: ROLL 15-SIDED DICE.
-             * >300 PLAYERS: ROLL 20-SIDED DICE.
+             * DICE ROLL LOGIC:
+             * <= 15 PARTICIPANTS: ROLL 2-SIDED DICE.
+             * 16-30 PARTICIPANTS: ROLL 4-SIDED DICE.
+             * 31-60 PARTICIPANTS: ROLL 6-SIDED DICE.
+             * 61-120 PARTICIPANTS: ROLL 10-SIDED DICE.
+             * 121-300 PARTICIPANTS: ROLL 15-SIDED DICE.
+             * >300 PARTICIPANTS: ROLL 20-SIDED DICE.
              */
-            if (participantsLeftCount <= 15) {
+            if (participantsLeft.length <= 15) {
                 diceRoll = Math.floor(Math.random() * 2) + 1;
-            } else if (participantsLeftCount <= 30) {
+            } else if (participantsLeft.length <= 30) {
                 diceRoll = Math.floor(Math.random() * 4) + 1;
-            } else if (participantsLeftCount <= 60) {
+            } else if (participantsLeft.length <= 60) {
                 diceRoll = Math.floor(Math.random() * 6) + 1;
-            } else if (participantsLeftCount <= 120) {
+            } else if (participantsLeft.length <= 120) {
                 diceRoll = Math.floor(Math.random() * 10) + 1;
-            } else if (participantsLeftCount <= 300) {
+            } else if (participantsLeft.length <= 300) {
                 diceRoll = Math.floor(Math.random() * 15) + 1;
             } else {
                 diceRoll = Math.floor(Math.random() * 20) + 1;
@@ -156,32 +149,16 @@ const startHunterGames = async (
             // depending on the dice roll, we will determine the participants that will have to 'fight each other' in this round.
             const participantsToFight = [];
 
-            // if there are no participants, we will end the game.
-            if (participantsLeftCount === 0) {
-                console.log('no participants');
-                return;
-            }
-
-            // the only exception is that if there is only 1 participant and the dice rolls a 2.
-            // in this case, the participant will not have to fight anyone and will automatically win the game.
-            if (participantsLeftCount === 1 && diceRoll >= 2) {
-                console.log(diceRoll);
-                console.log('winner winner chicken dinner');
-                return;
-            }
-
-            // if there are less participants (or equal to) than the dice roll, we will need to only include
-            // the remaining participants.
-            if (participantsLeftCount <= diceRoll) {
-                console.log('less participants or equal to than dice roll');
+            // if there are less participants than the dice roll, we will only need to include the remaining participants.
+            if (participantsLeft.length < diceRoll) {
+                console.log('less participants than dice roll');
                 participantsLeft.forEach((participant) => {
                     participantsToFight.push(participant);
                 });
-            // otherwise, we randomize the participants that will fight each other.
             } else {
-                console.log('more participants than dice roll');
-                while (participantsToFight.length <= diceRoll) {
-                    const randomParticipant = participantsLeft[Math.floor(Math.random() * participants.length)];
+                // if there are more participants than the dice roll, we will randomly select participants to fight.
+                while (participantsToFight.length < diceRoll) {
+                    const randomParticipant = participantsLeft[Math.floor(Math.random() * participantsLeft.length)];
                     if (!participantsToFight.includes(randomParticipant)) {
                         participantsToFight.push(randomParticipant);
                     }
@@ -190,89 +167,96 @@ const startHunterGames = async (
 
             console.log(participantsToFight);
 
-            // once we gather the participants that will fight each other, we will determine the winners of the round.
-            // e.g. if 8 participants, then p1 fights p2, p3 fights p4 and so on.
-            // if we have an odd amount of participants, the last participant may or may not die (dice roll).
+            // once we've gathered the participants to fight, we will determine the winners of the round.
+            // e.g. if 8 participants, then p1 vs p2, p3 vs p4, p5 vs p6, p7 vs p8.
+            // if we have an odd amount of participants, the last participant may or may not die.
+            // in this case, we will first check if participantsLeft.length === 1. if yes, they will be the winner.
 
-            // battle messages (who killed who, what happened, etc)
+            // battle messages (what happened, who killed who etc)
             const battleMessages = [];
 
-            // if there are an even amt of participants, we will do a battle for the first 2 participants
-            // (aka first 2 indexes of the `participantsToFight` array)
+            // if there's an even amount of participants, we will do a battle for the first 2 participants (i.e. first 2 indexes of the array)
             while (participantsToFight.length > 0) {
-                // if there's only 1 player left, we roll a dice to see if they die or not.
+                // if there's only 1 participant left in the entire round, we check if there is more than 1 participant left (in the entire game).
                 if (participantsToFight.length === 1) {
-                    const diceRoll = Math.floor(Math.random() * 2) + 1;
-                    const participantIndex = participantsToFight[0].index;
-                    // if dice roll is 1, they die.
-                    if (diceRoll === 1) {
-                        // we do 4 things:
-                        // 1. we update the `hasDied` and `diedAtPosition` of the player.
-                        // 2. we remove the player from the `participantsToFight` array.
-                        // 3. we remove the player from the `participantsLeft` array.
-                        // 4. we update the `participantsLeftCount` by subtracting 1.
-                        battleMessages.push(`💀 | ${participantsToFight[0].usertag} commited suicide.`);
-
-                        participants[participantIndex].hasDied = true;
-                        participants[participantIndex].diedAtPosition = participantsLeftCount;
-                        participantsToFight.splice(0, 1);
-                        participantsLeft.splice(participantIndex, 1);
-                        participantsLeftCount -= 1;
-                    // if dice roll is 2, they survive (basically nothing happened, no need to update anything)
+                    // if there is only 1 participant left in the entire game, they will win and we end the game.
+                    if (participantsLeft.length === 1) {
+                        break;
+                    // otherwise, we roll a dice to see if they will die or not.
                     } else {
-                        battleMessages.push(`🌳 | ${participantsToFight[0].usertag} wondered around and came back.`);
+                        const diceRoll = Math.floor(Math.random() * 2) + 1;
+                        const participantIndex = participantsToFight[0].index;
+
+                        // if the dice rolls a 1, they die.
+                        if (diceRoll === 1) {
+                            // we do 3 things:
+                            // 1. update `hasDied` and `diedAtPosition` of the participant.
+                            // 2. remove participant from `participantsLeft` array.
+                            // 3. remove participant from `participantsToFight` array.
+                            battleMessages.push(`💀 | ${participantsToFight[0].usertag} commited suicide.`);
+
+                            participants[participantIndex].hasDied = true;
+                            participants[participantIndex].diedAtPosition = participantsLeft.length;
+                            participantsToFight.splice(0, 1);
+                            participantsLeft.splice(participantIndex, 1);
+                        // if dice rolls a 2, they survive (nothing happened essentially)
+                        // we will still remove them from the participantsToFight so the next round will start.
+                        } else {
+                            battleMessages.push(`🌳 | ${participantsToFight[0].usertag} wondered around and came back.`);
+                            participantsToFight.splice(0, 1);
+                        }
                     }
+                // if there are still multiple participants in the current round still, we will let them fight.
                 } else {
-                    // randomizes a number between 1 and 2.
-                    const rand = Math.floor(Math.random() * 2) + 1;
-                    // if rand = 1, then player 1 wins. if rand = 2, then player 2 wins.
-                    if (rand === 1) {
-                        // if player 1 wins, we do 4 things:
-                        // 1. we update the kills of p1 and update the `hasDied` and `diedAtPosition` of p2.
-                        // 2. we remove p2 from the `participantsToFight` array.
+                    const diceRoll = Math.floor(Math.random() * 2) + 1;
+                    // if dice rolls a 1, participant 1 'kills' participant 2.
+                    if (diceRoll === 1) {
+                        // we do 3 things:
+                        // 1. we update the kills of p1 + update `hasDied` and `diedAtPosition` of p2.
+                        // 2. we remove p1 and p2 from the `participantsToFight` array.
                         // 3. we remove p2 from the `participantsLeft` array.
-                        // 4. we update the `participantsLeftCount` by subtracting 1.
                         const winnerIndex = participantsToFight[0].index;
                         const loserIndex = participantsToFight[1].index;
 
-                        // currently static battle message. will be updated to be dynamic.
-                        battleMessages.push(`💀 | ${participantsToFight[0].usertag} killed ${participantsToFight[1].usertag}!`);
+                        // static battle message. will be updated to dynamic later on.
+                        battleMessages.push(`🔪 | ${participantsToFight[0].usertag} killed ${participantsToFight[1].usertag}.`);
 
                         const winner = participants[winnerIndex];
                         winner.kills += 1;
 
                         const loser = participants[loserIndex];
                         loser.hasDied = true;
-                        loser.diedAtPosition = participantsLeftCount;
-                        participantsToFight.splice(1, 1);
+                        loser.diedAtPosition = participantsLeft.length;
+                        // essentially splicing the first 2 indexes (which are the current 2 participants that fought each other)
+                        participantsToFight.splice(0, 2);
                         participantsLeft.splice(loserIndex, 1);
-                        participantsLeftCount -= 1;
-                    } else if (rand === 2) {
-                        // if player 2 wins, we do 4 things:
-                        // 1. we update the kills of p2 and update the `hasDied` and `diedAtPosition` of p1.
-                        // 2. we remove p1 from the `participantsToFight` array.
+                    // if dice rolls a 2, participant 2 'kills' participant 1.
+                    } else {
+                        // we do 3 things:
+                        // 1. we update the kills of p2 + update `hasDied` and `diedAtPosition` of p1.
+                        // 2. we remove p1 and p2 from the `participantsToFight` array.
                         // 3. we remove p1 from the `participantsLeft` array.
-                        // 4. we update the `participantsLeftCount` by subtracting 1.
                         const winnerIndex = participantsToFight[1].index;
                         const loserIndex = participantsToFight[0].index;
 
-                        // currently static battle message. will be updated to be dynamic.
-                        battleMessages.push(`💀 | ${participantsToFight[1].usertag} killed ${participantsToFight[0].usertag}!`);
+                        // static battle message. will be updated to dynamic later on.
+                        battleMessages.push(`🔪 | ${participantsToFight[1].usertag} killed ${participantsToFight[0].usertag}.`);
 
                         const winner = participants[winnerIndex];
                         winner.kills += 1;
 
                         const loser = participants[loserIndex];
                         loser.hasDied = true;
-                        loser.diedAtPosition = participantsLeftCount;
-                        participantsToFight.splice(0, 1);
+                        loser.diedAtPosition = participantsLeft.length;
+                        // essentially splicing the first 2 indexes (which are the current 2 participants that fought each other)
+                        participantsToFight.splice(0, 2);
                         participantsLeft.splice(loserIndex, 1);
-                        participantsLeftCount -= 1;
                     }
                 }
             }
 
-            // after the battles finish, we will compile the battle messages into a single string for the embed.
+            // once there are no more participants in the `participantsToFight` array, we will compile the current round's
+            // battle messages into a single string.
             let battleMessageString = '';
             for (let i = 0; i < battleMessages.length; i++) {
                 battleMessageString += `${battleMessages[i]}\n`;
@@ -280,21 +264,103 @@ const startHunterGames = async (
 
             // wait 3 seconds before showing the current round's results.
             await delay(3000);
+
             const currentRoundResults = await client.channels.cache.get('1077197901517836348').send({
-                embeds: [hunterGamesBattle(currentRound, battleMessageString, participantsLeftCount)],
+                embeds: [hunterGamesBattle(currentRound, battleMessageString, participantsLeft.length)],
             });
 
             // wait 5 seconds before starting the next round.
             await delay(5000);
-
             currentRound++;
         }
-        console.log('finished');
+
+        console.log('1 participant left. Game over!');
+
+        const winner = participantsLeft[0];
+        // we need to get the index and change the `diedToPosition` to 1.
+        // (essentially, they didn't 'die', but it's to query for the leaderboard.)
+        const winnerIndex = winner.index;
+        participants[winnerIndex].diedToPosition = 1;
+
+        console.log('Winner:', participants[winnerIndex]);
+        /**
+         * THE LOGIC FOR THE WINNER LEADERBOARD IS AS FOLLOWS:
+         * IF < 25 PARTICIPANTS, TOP 1 EARNS 10 DISCORD POINTS.
+         * IF 26 - 50 PARTICIPANTS, TOP 3 EARNS 14, 12, 10 DISCORD POINTS.
+         * IF 51 - 75 PARTICIPANTS, TOP 5 EARNS 16, 14, 12, 10, 9 DISCORD POINTS.
+         * IF 76 - 125 PARTICIPANTS, TOP 7 EARNS 17, 15, 14, 12, 10, 9, 8 DISCORD POINTS.
+         * IF 126 - 200 PARTICIPANTS, TOP 10 EARNS 19, 18, 17, 15, 13, 12, 10, 9, 8, 7 DISCORD POINTS.
+         * IF 201 - 300 PARTICIPANTS, TOP 15 EARNS 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6 DISCORD POINTS.
+         * IF > 301 PARTICIPANTS, TOP 20 EARNS 25, 23, 21, 20, 19, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3 DISCORD POINTS.
+         */
+        let leaderboardAsString = '';
+        let ranking = 1;
+        if (startingParticipantsCount <= 25) {
+            // only 1 winner.
+            leaderboardAsString += `1. ${participants[winnerIndex].usertag} - 10 Realm Points.`;
+        } else if (startingParticipantsCount <= 50) {
+            // 3 winners
+            const points = [14, 12, 10];
+            const winners = participants.filter((p) => p.diedAtPosition <= 3);
+            const sortedWinners = winners.sort((a, b) => a.diedAtPosition - b.diedAtPosition);
+            sortedWinners.forEach((winner) => {
+                leaderboardAsString += `${ranking}. ${winner.usertag} - ${points[ranking - 1]} Realm Points.\n`;
+                ranking++;
+            });
+        } else if (startingParticipantsCount <= 75) {
+            // 5 winners
+            const points = [16, 14, 12, 10, 9];
+            const winners = participants.filter((p) => p.diedAtPosition <= 5);
+            const sortedWinners = winners.sort((a, b) => a.diedAtPosition - b.diedAtPosition);
+            sortedWinners.forEach((winner) => {
+                leaderboardAsString += `${ranking}. ${winner.usertag} - ${points[ranking - 1]} Realm Points.\n`;
+                ranking++;
+            });
+        } else if (startingParticipantsCount <= 125) {
+            // 7 winners
+            const points = [17, 15, 14, 12, 10, 9, 8];
+            const winners = participants.filter((p) => p.diedAtPosition <= 7);
+            const sortedWinners = winners.sort((a, b) => a.diedAtPosition - b.diedAtPosition);
+            sortedWinners.forEach((winner) => {
+                leaderboardAsString += `${ranking}. ${winner.usertag} - ${points[ranking - 1]} Realm Points.\n`;
+                ranking++;
+            });
+        } else if (startingParticipantsCount <= 200) {
+            // 10 winners
+            const points = [19, 18, 17, 15, 13, 12, 10, 9, 8, 7];
+            const winners = participants.filter((p) => p.diedAtPosition <= 10);
+            const sortedWinners = winners.sort((a, b) => a.diedAtPosition - b.diedAtPosition);
+            sortedWinners.forEach((winner) => {
+                leaderboardAsString += `${ranking}. ${winner.usertag} - ${points[ranking - 1]} Realm Points.\n`;
+                ranking++;
+            });
+        } else if (startingParticipantsCount <= 300) {
+            // 15 winners
+            const points = [20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6];
+            const winners = participants.filter((p) => p.diedAtPosition <= 15);
+            const sortedWinners = winners.sort((a, b) => a.diedAtPosition - b.diedAtPosition);
+            sortedWinners.forEach((winner) => {
+                leaderboardAsString += `${ranking}. ${winner.usertag} - ${points[ranking - 1]} Realm Points.\n`;
+                ranking++;
+            });
+        } else {
+            // 20 winners
+            const points = [25, 23, 21, 20, 19, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3];
+            const winners = participants.filter((p) => p.diedAtPosition <= 20);
+            const sortedWinners = winners.sort((a, b) => a.diedAtPosition - b.diedAtPosition);
+            sortedWinners.forEach((winner) => {
+                leaderboardAsString += `${ranking}. ${winner.usertag} - ${points[ranking - 1]} Realm Points.\n`;
+                ranking++;
+            });
+        }
+        const winnerEmbed = await client.channels.cache.get('1077197901517836348').send({
+            embeds: [hunterGamesFinished(leaderboardAsString)],
+        });
     } catch (err) {
         throw err;
     }
 };
 
 module.exports = {
-    startHunterGames,
+    hunterGames,
 };

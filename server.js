@@ -8,7 +8,7 @@ const claimGPWRoleGA = require('./commands/claimGPWRoleGA');
 const claimGPWRoleGAModal = require('./modals/claimGPWRoleGA');
 const chooseGPWCollab = require('./selectMenus/collabGPW');
 const { createBackup, fetchBackupInfo, loadBackup, deleteBackup } = require('./commands/backup');
-const { startHunterGames } = require('./commands/hunterGames');
+const { hunterGames } = require('./commands/hunterGames');
 const token = process.env.BOT_TOKEN;
 
 const client = new Client({
@@ -46,7 +46,7 @@ client.on('ready', c => {
 
 client.on('messageCreate', async (message) => {
     if (message.content.toLowerCase() === '!testhuntergames') {
-        await startHunterGames(client, message);
+        await hunterGames(client, message);
     }
 
     // CREATE BACKUP
