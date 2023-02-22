@@ -82,17 +82,38 @@ const hunterGames = async (client, message) => {
             });
         });
 
-        ////////// WILL CHANGE TO MULTIPLE UPDATES. FOR TESTING PURPOSES, IT WILL ONLY BE ONCE RIGHT NOW.
-        await delay(3000);
-        const hunterGamesUpdate = await client.channels.cache.get('1077197901517836348').send({
-            embeds: [updateHunterGamesMessage(5, '5 seconds left!')],
+        // wait 2 minutes before updating and reminding the game start time.
+        await delay(120000);
+        const firstUpdate = await client.channels.cache.get('1077197901517836348').send({
+            embeds: [updateHunterGamesMessage(180, 'Buckle up, Hunters!')],
         });
 
-        await delay(5000);
+        // wait another 2 minutes (total 4 minutes) to remind that the battle will start in 1 minute.
+        await delay(12000);
+        await firstUpdate.delete();
+        // we also delete the first update message
+        const secondUpdate = await client.channels.cache.get('1077197901517836348').send({
+            embeds: [updateHunterGamesMessage(60, '1 minute left. Getting excited yet?')],
+        });
 
+        // wait another 30 seconds (total 4 mins 30 secs) to remind that the battle will start in 30 seconds.
+        await delay(30000);
+        await secondUpdate.delete();
+        const thirdUpdate = await client.channels.cache.get('1077197901517836348').send({
+            embeds: [updateHunterGamesMessage(30, '30 seconds left. Who will be the lucky winner?')],
+        });
+
+        // wait another 20 seconds (total 4 mins 50 secs) to remind that the battle will start in 10 seconds.
+        await delay(20000);
+        await thirdUpdate.delete();
+        const fourthUpdate = await client.channels.cache.get('1077197901517836348').send({
+            embeds: [updateHunterGamesMessage(10, '10 seconds left. Last chance to join in the fun!')],
+        });
+
+        // after 10 more seconds, the 5 imuntes timer will run out and the game will start.
+        await delay(10000);
         // before the start of the game, we will check if there are enough participants.
         const startingParticipantsCount = participants.length;
-
         console.log('startingParticipantsCount: ', startingParticipantsCount);
 
         if (startingParticipantsCount <= 1) {
@@ -164,8 +185,6 @@ const hunterGames = async (client, message) => {
                     }
                 }
             }
-
-            console.log(participantsToFight);
 
             // once we've gathered the participants to fight, we will determine the winners of the round.
             // e.g. if 8 participants, then p1 vs p2, p3 vs p4, p5 vs p6, p7 vs p8.
