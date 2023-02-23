@@ -302,20 +302,6 @@ const hunterGames = async (client, message) => {
         }
         console.log('1 participant left. Game over!');
 
-        // const winner = participantsLeft[0];
-
-        // console.log(winner);
-
-        // // we need to get the index and change the `diedAtPosition` to 1.
-        // // (essentially, they didn't 'die', but it's to query for the leaderboard.)
-        // const winnerIndex = winner.index;
-
-        // console.log('winner index: ', winnerIndex);
-
-        // console.log('startingParticipants: ', startingParticipants);
-        // console.log('winner: ', startingParticipants[winnerIndex]);
-        // startingParticipants[winnerIndex].diedAtPosition = 1;
-
         /**
          * THE LOGIC FOR THE WINNER LEADERBOARD IS AS FOLLOWS:
          * IF < 25 PARTICIPANTS, TOP 1 EARNS 10 REALM POINTS.
