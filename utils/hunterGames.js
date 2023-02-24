@@ -11,12 +11,6 @@ const claimRealmPoints = async (winnersData) => {
     try {
         console.log('winners data: ', winnersData);
 
-        await Moralis.start({
-            serverUrl: process.env.MORALIS_SERVERURL,
-            appId: process.env.MORALIS_APPID,
-            masterKey: process.env.MORALIS_MASTERKEY,
-        });
-
         if (!winnersData) {
             return {
                 status: 'error',

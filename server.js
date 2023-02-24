@@ -4,6 +4,7 @@ const path = require('path');
 const backup = require('discord-backup');
 
 const { Client, GatewayIntentBits, Collection, InteractionType, MessageFlags } = require('discord.js');
+const Moralis = require('moralis-v1/node');
 const claimGPWRoleGA = require('./commands/claimGPWRoleGA');
 const claimGPWRoleGAModal = require('./modals/claimGPWRoleGA');
 const chooseGPWCollab = require('./selectMenus/collabGPW');
@@ -42,19 +43,14 @@ for (const file of commandFiles) {
     }
 }
 
-client.on('ready', c => {
+client.on('ready', async c => {
     console.log(`Logged in as ${c.user.tag}`);
+    await Moralis.start({
+        serverUrl: process.env.MORALIS_SERVERURL,
+        appId: process.env.MORALIS_APPID,
+        masterKey: process.env.MORALIS_MASTERKEY,
+    });
 });
-
-/// WILD NBMON APPEARANCE VARIABLES
-/// when the bot is first deployed, both variables will be set to 0.
-/// here we want to check 2 things:
-// 1. the amount of messages in `general chat` since the bot is deployed.
-// for every 750 messages in general chat, a hybrid nbmon will appear.
-// 2. the previous time a wild nbmon appeared.
-// after a wild nbmon has appeared, they will not be able to appear for the next 5 minutes.
-// let generalChatMessages = 0;
-// let lastWildNBMonAppearance = 0;
 
 client.on('messageCreate', async (message) => {
     // SHOW INVENTORY TO USER.
@@ -71,7 +67,12 @@ client.on('messageCreate', async (message) => {
     }
     // if hunters want to capture the nbmon, they need to STRICTLY type !capture <ID> (e.g. !capture 1).
     // any additional words after the ID will not be accepted.
-    if (message.channelId === '1070311416109740042' && !message.author.bot && message.content.includes('!capture') && !message.content.includes('!showinventory')) {
+    if (
+        message.channelId === '1070311416109740042' &&
+        !message.author.bot &&
+        message.content.toLowerCase().includes('!capture') &&
+        !message.content.toLowerCase().includes('!showinventory')
+    ) {
         const completeContent = message.content;
 
         const currentIdToCapture = await getLatestWildNBMonId();
@@ -94,7 +95,12 @@ client.on('messageCreate', async (message) => {
     // TEST WILD NBMON APPEARANCE
     // TEST ON TEST-FOUNDERS-BOT-COMMANDS CHANNEL
     // make sure that it doesnt count the bot itself + not default messages like to capture.
-    if (message.channelId === '1070311416109740042' && !message.author.bot && !message.content.includes('!capture') && !message.content.includes('!showinventory')) {
+    if (
+        message.channelId === '1070311416109740042' &&
+        !message.author.bot &&
+        !message.content.toLowerCase().includes('!capture') &&
+        !message.content.toLowerCase().includes('!showinventory')
+    ) {
         await addGeneralChatMsgCount();
         const rand = Math.floor(Math.random() * 1000) + 1;
 

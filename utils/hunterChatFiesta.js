@@ -9,12 +9,6 @@ const { parseJSON } = require('./jsonParser');
  */
 const showUserInventory = async (message, userId, username) => {
     try {
-        await Moralis.start({
-            serverUrl: process.env.MORALIS_SERVERURL,
-            appId: process.env.MORALIS_APPID,
-            masterKey: process.env.MORALIS_MASTERKEY,
-        });
-
         const RHDiscord = new Moralis.Query('RHDiscord');
         RHDiscord.equalTo('userId', userId);
 
@@ -41,12 +35,6 @@ const showUserInventory = async (message, userId, username) => {
 
 const addGeneralChatMsgCount = async () => {
     try {
-        await Moralis.start({
-            serverUrl: process.env.MORALIS_SERVERURL,
-            appId: process.env.MORALIS_APPID,
-            masterKey: process.env.MORALIS_MASTERKEY,
-        });
-
         const RHDiscordData = new Moralis.Query('RHDiscordData');
         RHDiscordData.equalTo('uniqueId', 1);
 
@@ -66,12 +54,6 @@ const addGeneralChatMsgCount = async () => {
 
 const getGeneralChatMsgCount = async () => {
     try {
-        await Moralis.start({
-            serverUrl: process.env.MORALIS_SERVERURL,
-            appId: process.env.MORALIS_APPID,
-            masterKey: process.env.MORALIS_MASTERKEY,
-        });
-
         const RHDiscordData = new Moralis.Query('RHDiscordData');
         RHDiscordData.equalTo('uniqueId', 1);
 
@@ -95,12 +77,6 @@ const getGeneralChatMsgCount = async () => {
  */
 const addWildNBMon = async (nbmonId, genus) => {
     try {
-        await Moralis.start({
-            serverUrl: process.env.MORALIS_SERVERURL,
-            appId: process.env.MORALIS_APPID,
-            masterKey: process.env.MORALIS_MASTERKEY,
-        });
-
         const RHDiscordWildNBMons = Moralis.Object.extend('RHDiscordWildNBMons');
         const rhDiscordWildNBMons = new RHDiscordWildNBMons();
 
@@ -122,12 +98,6 @@ const addWildNBMon = async (nbmonId, genus) => {
  */
 const checkWildNBMonAppearance = async () => {
     try {
-        await Moralis.start({
-            serverUrl: process.env.MORALIS_SERVERURL,
-            appId: process.env.MORALIS_APPID,
-            masterKey: process.env.MORALIS_MASTERKEY,
-        });
-
         const WildNBMonsData = new Moralis.Query('RHDiscordWildNBMons');
         WildNBMonsData.descending('createdAt');
 
@@ -154,12 +124,6 @@ const checkWildNBMonAppearance = async () => {
  */
 const captureWildNBMon = async (id, userId) => {
     try {
-        await Moralis.start({
-            serverUrl: process.env.MORALIS_SERVERURL,
-            appId: process.env.MORALIS_APPID,
-            masterKey: process.env.MORALIS_MASTERKEY,
-        });
-
         const WildNBMonsData = new Moralis.Query('RHDiscordWildNBMons');
         WildNBMonsData.equalTo('nbmonId', id);
 
@@ -225,12 +189,6 @@ const captureWildNBMon = async (id, userId) => {
  */
 const checkPrevWildNBMonCaptured = async () => {
     try {
-        await Moralis.start({
-            serverUrl: process.env.MORALIS_SERVERURL,
-            appId: process.env.MORALIS_APPID,
-            masterKey: process.env.MORALIS_MASTERKEY,
-        });
-
         const WildNBMonsData = new Moralis.Query('RHDiscordWildNBMons');
         WildNBMonsData.descending('createdAt');
 
@@ -257,12 +215,6 @@ const checkPrevWildNBMonCaptured = async () => {
  */
 const allowNextWildNBMonToAppear = async () => {
     try {
-        await Moralis.start({
-            serverUrl: process.env.MORALIS_SERVERURL,
-            appId: process.env.MORALIS_APPID,
-            masterKey: process.env.MORALIS_MASTERKEY,
-        });
-
         const prevAppearance = await checkWildNBMonAppearance();
         const isPrevCaptured = await checkPrevWildNBMonCaptured();
 
@@ -283,12 +235,6 @@ const allowNextWildNBMonToAppear = async () => {
  */
 const getLatestWildNBMonId = async () => {
     try {
-        await Moralis.start({
-            serverUrl: process.env.MORALIS_SERVERURL,
-            appId: process.env.MORALIS_APPID,
-            masterKey: process.env.MORALIS_MASTERKEY,
-        });
-
         const WildNBMonsData = new Moralis.Query('RHDiscordWildNBMons');
         WildNBMonsData.descending('nbmonId');
 

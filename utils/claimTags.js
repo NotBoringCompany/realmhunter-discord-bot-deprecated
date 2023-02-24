@@ -10,12 +10,6 @@ const { parseJSON } = require('./jsonParser');
  */
 const claimTags = async (userId, role, joinDate) => {
     try {
-        await Moralis.start({
-            serverUrl: process.env.MORALIS_SERVERURL,
-            appId: process.env.MORALIS_APPID,
-            masterKey: process.env.MORALIS_MASTERKEY,
-        });
-
         const RHDiscordDB = Moralis.Object.extend('RHDiscord');
         const rhDiscordDB = new RHDiscordDB();
 
@@ -84,12 +78,6 @@ const claimTags = async (userId, role, joinDate) => {
  */
 const claimExtraTags = async (userId) => {
     try {
-        await Moralis.start({
-            serverUrl: process.env.MORALIS_SERVERURL,
-            appId: process.env.MORALIS_APPID,
-            masterKey: process.env.MORALIS_MASTERKEY,
-        });
-
         const RHDiscordDB = Moralis.Object.extend('RHDiscord');
         const rhDiscordDB = new RHDiscordDB();
 
