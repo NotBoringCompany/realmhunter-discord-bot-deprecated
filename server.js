@@ -9,6 +9,8 @@ const claimGPWRoleGAModal = require('./modals/claimGPWRoleGA');
 const chooseGPWCollab = require('./selectMenus/collabGPW');
 const { createBackup, fetchBackupInfo, loadBackup, deleteBackup } = require('./commands/backup');
 const { hunterGames } = require('./commands/hunterGames');
+const { wildNBMonAppearance, addGeneralChatMsgCount, getGeneralChatMsgCount, checkWildNBMonAppearance, updateWildNBMonAppearance, allowNextWildNBMonToAppear, getLatestWildNBMonId, checkPrevWildNBMonCaptured, captureWildNBMon } = require('./utils/hunterChatFiesta');
+const { delay } = require('./utils/delay');
 const token = process.env.BOT_TOKEN;
 
 const client = new Client({
@@ -44,7 +46,61 @@ client.on('ready', c => {
     console.log(`Logged in as ${c.user.tag}`);
 });
 
+/// WILD NBMON APPEARANCE VARIABLES
+/// when the bot is first deployed, both variables will be set to 0.
+/// here we want to check 2 things:
+// 1. the amount of messages in `general chat` since the bot is deployed.
+// for every 750 messages in general chat, a hybrid nbmon will appear.
+// 2. the previous time a wild nbmon appeared.
+// after a wild nbmon has appeared, they will not be able to appear for the next 5 minutes.
+// let generalChatMessages = 0;
+// let lastWildNBMonAppearance = 0;
+
 client.on('messageCreate', async (message) => {
+    // if hunters want to capture the nbmon, they need to STRICTLY type !capture <ID> (e.g. !capture 1). 
+    // any additional words after the ID will not be accepted.
+    if (message.channelId === '1070311416109740042' && !message.author.bot && message.content.includes('!capture')) {
+        const completeContent = message.content;
+
+        const currentIdToCapture = await getLatestWildNBMonId();
+        if (completeContent.endsWith(currentIdToCapture.toString())) {
+            // we check if the nbmon has been captured.
+            const captured = await checkPrevWildNBMonCaptured();
+
+            if (captured) {
+                console.log('Wild NBMon has already been captured.');
+                return;
+            } else {
+                // we update the nbmon to captured.
+                await captureWildNBMon(currentIdToCapture, message.author.id);
+                await message.channel.send(`Congratulations ${message.author.username}! You have captured the wild NBMon!`);
+            }
+        } else {
+            return;
+        }
+    }
+    // TEST WILD NBMON APPEARANCE
+    // TEST ON TEST-FOUNDERS-BOT-COMMANDS CHANNEL
+    // make sure that it doesnt count the bot itself + not default messages like to capture.
+    if (message.channelId === '1070311416109740042' && !message.author.bot && !message.content.includes('!capture')) {
+        await addGeneralChatMsgCount();
+        const rand = Math.floor(Math.random() * 1000) + 1;
+
+        // 0.1% chance of wild NBMon appearing with each message
+        if (rand === 1) {
+            // we check if a new wild NBMon can appear.
+            const allow = await allowNextWildNBMonToAppear();
+
+            if (!allow) {
+                console.log('Wild NBMon cannot appear yet.');
+                return;
+            } else {
+                await wildNBMonAppearance(message);
+            }
+        }
+    }
+
+    // TEST HUNTER GAMES
     if (message.content.toLowerCase() === '!testhuntergames') {
         await hunterGames(client, message);
     }

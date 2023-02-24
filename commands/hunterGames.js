@@ -7,7 +7,7 @@ const {
     hunterGamesFinished,
 } = require('../embeds/hunterGames');
 const { delay } = require('../utils/delay');
-const { claimHunterPoints, claimRealmPoints } = require('../utils/hunterGames');
+const { claimHunterPoints, claimRealmPoints, battleMessageTemplates } = require('../utils/hunterGames');
 
 const hunterGames = async (client, message) => {
     try {
@@ -147,7 +147,7 @@ const hunterGames = async (client, message) => {
                 break;
             }
 
-            let diceRoll;
+            let initialDiceRoll;
 
             /**
              * WE WILL FIRST DO A DICE ROLL TO DETERMINE HOW MANY PARTICIPANTS WILL GET ELIMINATED IN EACH ROUND.
@@ -160,31 +160,32 @@ const hunterGames = async (client, message) => {
              * >300 PARTICIPANTS: ROLL 20-SIDED DICE.
              */
             if (participantsLeft.length <= 15) {
-                diceRoll = Math.floor(Math.random() * 3) + 1;
+                initialDiceRoll = Math.floor(Math.random() * 3) + 1;
             } else if (participantsLeft.length <= 30) {
-                diceRoll = Math.floor(Math.random() * 5) + 1;
+                initialDiceRoll = Math.floor(Math.random() * 5) + 1;
             } else if (participantsLeft.length <= 60) {
-                diceRoll = Math.floor(Math.random() * 7) + 1;
+                initialDiceRoll = Math.floor(Math.random() * 7) + 1;
             } else if (participantsLeft.length <= 120) {
-                diceRoll = Math.floor(Math.random() * 10) + 1;
+                initialDiceRoll = Math.floor(Math.random() * 10) + 1;
             } else if (participantsLeft.length <= 300) {
-                diceRoll = Math.floor(Math.random() * 15) + 1;
+                initialDiceRoll = Math.floor(Math.random() * 15) + 1;
             } else {
-                diceRoll = Math.floor(Math.random() * 20) + 1;
+                initialDiceRoll = Math.floor(Math.random() * 20) + 1;
             }
 
             // depending on the dice roll, we will determine the participants that will have to 'fight each other' in this round.
             const participantsToFight = [];
 
-            // if there are less participants (or equal to) than the dice roll, we will only need to include the remaining participants.
-            if (participantsLeft.length <= diceRoll) {
+            // if there are less participants than the dice roll, we will only need to include the remaining participants.
+            if (participantsLeft.length < initialDiceRoll) {
                 console.log('less participants than dice roll');
                 participantsLeft.forEach((participant) => {
                     participantsToFight.push(participant);
                 });
             } else {
                 // if there are more participants than the dice roll, we will randomly select participants to fight.
-                while (participantsToFight.length < diceRoll) {
+                while (participantsToFight.length < initialDiceRoll) {
+                    console.log('more participants than dice roll');
                     const randomParticipant = participantsLeft[Math.floor(Math.random() * participantsLeft.length)];
                     if (!participantsToFight.includes(randomParticipant)) {
                         participantsToFight.push(randomParticipant);
@@ -204,16 +205,14 @@ const hunterGames = async (client, message) => {
             while (participantsToFight.length > 0) {
                 // if there's only 1 participant left in the entire round, we check if there is more than 1 participant left (in the entire game).
                 if (participantsToFight.length === 1) {
+                    console.log('1 participant to fight left: ', participantsToFight);
                     // if there is only 1 participant left in the entire game, they will win and we end the game.
                     if (participantsLeft.length === 1) {
                         break;
                     // otherwise, we roll a dice to see if they will die or not.
                     } else {
                         const diceRoll = Math.floor(Math.random() * 2) + 1;
-                        const participantIndex = participantsToFight[0].index;
-
-                        console.log('Dice roll! Participants left: ', participantsLeft);
-                        console.log('Participants left to fight: ', participantsToFight);
+                        const participant = participantsToFight[0];
 
                         // if the dice rolls a 1, they die.
                         if (diceRoll === 1) {
@@ -221,16 +220,23 @@ const hunterGames = async (client, message) => {
                             // 1. update `hasDied` and `diedAtPosition` of the participant.
                             // 2. remove participant from `participantsLeft` array.
                             // 3. remove participant from `participantsToFight` array.
-                            battleMessages.push(`💀 | ${participantsToFight[0].usertag} commited suicide.`);
+                            const battleMessage = battleMessageTemplates('suicide', participant.usertag);
+                            battleMessages.push(battleMessage);
 
-                            startingParticipants[participantIndex].hasDied = true;
-                            startingParticipants[participantIndex].diedAtPosition = participantsLeft.length;
+                            // we search for the participant in the `participantsLeft` array to remove them
+                            const participantsLeftIndex = participantsLeft.findIndex((p) => p.usertag === participant.usertag);
+                            console.log(participantsLeftIndex);
+
+                            startingParticipants[participant.index].hasDied = true;
+                            startingParticipants[participant.index].diedAtPosition = participantsLeft.length;
                             participantsToFight.splice(0, 1);
-                            participantsLeft.splice(participantIndex, 1);
+                            participantsLeft.splice(participantsLeftIndex, 1);
                         // if dice rolls a 2, they survive (nothing happened essentially)
                         // we will still remove them from the participantsToFight so the next round will start.
                         } else {
-                            battleMessages.push(`🌳 | ${participantsToFight[0].usertag} wondered around and came back.`);
+                            console.log('participant who survived: ', participant.usertag);
+                            const battleMessage = battleMessageTemplates('survive', participant.userTag);
+                            battleMessages.push(battleMessage);
                             participantsToFight.splice(0, 1);
                         }
                     }
@@ -243,42 +249,57 @@ const hunterGames = async (client, message) => {
                         // 1. we update the kills of p1 + update `hasDied` and `diedAtPosition` of p2.
                         // 2. we remove p1 and p2 from the `participantsToFight` array.
                         // 3. we remove p2 from the `participantsLeft` array.
-                        const winnerIndex = participantsToFight[0].index;
-                        const loserIndex = participantsToFight[1].index;
+                        const winnerFighter = participantsToFight[0];
+                        const loserFighter = participantsToFight[1];
 
-                        // static battle message. will be updated to dynamic later on.
-                        battleMessages.push(`🔪 | ${participantsToFight[0].usertag} killed ${participantsToFight[1].usertag}.`);
+                        console.log('winner is player 1!');
+                        console.log('winner: ', winnerFighter);
+                        console.log('loser: ', loserFighter);
 
-                        const winner = startingParticipants[winnerIndex];
+                        const battleMessage = battleMessageTemplates('kill', winnerFighter.usertag, loserFighter.usertag);
+                        battleMessages.push(battleMessage);
+
+                        // we search for the loser in the `participantsLeft` array to remove them
+                        const loserParticipantsLeftIndex = participantsLeft.findIndex((p) => p.usertag === loserFighter.usertag);
+
+                        const winner = startingParticipants[winnerFighter.index];
                         winner.kills += 1;
 
-                        const loser = startingParticipants[loserIndex];
+                        const loser = startingParticipants[loserFighter.index];
                         loser.hasDied = true;
                         loser.diedAtPosition = participantsLeft.length;
                         // essentially splicing the first 2 indexes (which are the current 2 participants that fought each other)
                         participantsToFight.splice(0, 2);
-                        participantsLeft.splice(loserIndex, 1);
+                        participantsLeft.splice(loserParticipantsLeftIndex, 1);
                     // if dice rolls a 2, participant 2 'kills' participant 1.
                     } else {
                         // we do 3 things:
                         // 1. we update the kills of p2 + update `hasDied` and `diedAtPosition` of p1.
                         // 2. we remove p1 and p2 from the `participantsToFight` array.
                         // 3. we remove p1 from the `participantsLeft` array.
-                        const winnerIndex = participantsToFight[1].index;
-                        const loserIndex = participantsToFight[0].index;
 
-                        // static battle message. will be updated to dynamic later on.
-                        battleMessages.push(`🔪 | ${participantsToFight[1].usertag} killed ${participantsToFight[0].usertag}.`);
+                        const winnerFighter = participantsToFight[1];
+                        const loserFighter = participantsToFight[0];
 
-                        const winner = startingParticipants[winnerIndex];
+                        console.log('winner is player 2!');
+                        console.log('winner: ', winnerFighter);
+                        console.log('loser: ', loserFighter);
+
+                        const battleMessage = battleMessageTemplates('kill', winnerFighter.usertag, loserFighter.usertag);
+                        battleMessages.push(battleMessage);
+
+                        // we search for the loser in the `participantsLeft` array to remove them
+                        const loserParticipantsLeftIndex = participantsLeft.findIndex((p) => p.usertag === loserFighter.usertag);
+
+                        const winner = startingParticipants[winnerFighter.index];
                         winner.kills += 1;
 
-                        const loser = startingParticipants[loserIndex];
+                        const loser = startingParticipants[loserFighter.index];
                         loser.hasDied = true;
                         loser.diedAtPosition = participantsLeft.length;
                         // essentially splicing the first 2 indexes (which are the current 2 participants that fought each other)
                         participantsToFight.splice(0, 2);
-                        participantsLeft.splice(loserIndex, 1);
+                        participantsLeft.splice(loserParticipantsLeftIndex, 1);
                     }
                 }
             }

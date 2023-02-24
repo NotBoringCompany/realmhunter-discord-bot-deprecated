@@ -67,7 +67,7 @@ const testWhile = () => {
 const testArr = () => {
     const array = ['hey', 'what', 'is', 'up'];
 
-    array.splice(0, 2);
+    array.splice(2, 1);
 
     console.log('spliced: ', array);
 }
@@ -80,4 +80,4 @@ const testIf = () => {
     console.log(arr.length);
 }
 
-testIf();
+testArr();
