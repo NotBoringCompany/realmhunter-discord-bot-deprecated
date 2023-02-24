@@ -150,7 +150,46 @@ const captureWildNBMon = async (id, userId) => {
         query.set('capturedBy', userId);
         query.set('capturedTimestamp', Math.floor(new Date().getTime() / 1000));
 
-        await query.save(null, { useMasterKey: true });
+        // we want to store the object ID to save it as a pointer in the `RHDiscord` database
+        let objId;
+
+        await query.save(null, { useMasterKey: true }).then((obj) => {
+            objId = obj.id;
+        });
+
+        // we will also store it in the `RHDiscord` database (to reflect it on the user's inventory)
+        const RHDiscord = new Moralis.Query('RHDiscord');
+        RHDiscord.equalTo('userId', userId);
+
+        const userQuery = await RHDiscord.first({ useMasterKey: true });
+
+        const wildNBMonPointer = {
+            '__type': 'Pointer',
+            'className': 'RHDiscordWildNBMons',
+            'objectId': objId,
+        };
+
+        // if user is found, then we will add the captured wild NBMon to the user's inventory
+        if (userQuery) {
+            const currentNBMonsOwned = (parseJSON(userQuery)).nbmons;
+
+            if (!currentNBMonsOwned) {
+                userQuery.set('nbmons', [wildNBMonPointer]);
+            } else {
+                userQuery.set('nbmons', [...currentNBMonsOwned, wildNBMonPointer]);
+            }
+
+            await userQuery.save(null, { useMasterKey: true });
+        // otherwise, we will need to create a new user in the `RHDiscord` database
+        } else {
+            const RHDiscord = Moralis.Object.extend('RHDiscord');
+            const rhDiscord = new RHDiscord();
+
+            rhDiscord.set('userId', userId);
+            rhDiscord.set('nbmons', [wildNBMonPointer]);
+
+            await rhDiscord.save(null, { useMasterKey: true });
+        }
     } catch (err) {
         throw err;
     }

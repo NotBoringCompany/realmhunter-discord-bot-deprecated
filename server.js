@@ -73,7 +73,7 @@ client.on('messageCreate', async (message) => {
             } else {
                 // we update the nbmon to captured.
                 await captureWildNBMon(currentIdToCapture, message.author.id);
-                await message.channel.send(`Congratulations ${message.author.username}! You have captured the wild NBMon!`);
+                await message.channel.send(`Congratulations ${message.author.tag}! You have captured the wild NBMon!`);
             }
         } else {
             return;
@@ -87,7 +87,7 @@ client.on('messageCreate', async (message) => {
         const rand = Math.floor(Math.random() * 1000) + 1;
 
         // 0.1% chance of wild NBMon appearing with each message
-        if (rand === 1) {
+        if (rand > 1) {
             // we check if a new wild NBMon can appear.
             const allow = await allowNextWildNBMonToAppear();
 
