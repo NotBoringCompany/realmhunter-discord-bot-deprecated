@@ -1,7 +1,43 @@
 require('dotenv').config();
 const { Moralis } = require('moralis-v1/node');
+const { userInventoryEmbed } = require('../embeds/userInventory');
 const { wildNBMonEmbed } = require('../embeds/wildNBMon');
 const { parseJSON } = require('./jsonParser');
+
+/**
+ * Shows the user's inventory.
+ */
+const showUserInventory = async (message, userId, username) => {
+    try {
+        await Moralis.start({
+            serverUrl: process.env.MORALIS_SERVERURL,
+            appId: process.env.MORALIS_APPID,
+            masterKey: process.env.MORALIS_MASTERKEY,
+        });
+
+        const RHDiscord = new Moralis.Query('RHDiscord');
+        RHDiscord.equalTo('userId', userId);
+
+        const query = await RHDiscord.first({ useMasterKey: true });
+
+        if (!query) {
+            throw new Error('No query found.');
+        }
+
+        const parsedQuery = parseJSON(query);
+        const hunterTags = parsedQuery.hunterTags ? parsedQuery.hunterTags : 0;
+        const realmPoints = parsedQuery.realmPoints ? parsedQuery.realmPoints : 0;
+
+        const wildNBMons = parsedQuery.wildNBMons ? parsedQuery.wildNBMons.length : 0;
+        const hybridNBMons = parsedQuery.hybridNBMons ? parsedQuery.hybridNBMons.length : 0;
+
+        const inventoryEmbed = await message.channel.send({
+            embeds: [userInventoryEmbed(username, hunterTags.toString(), realmPoints.toString(), wildNBMons.toString(), hybridNBMons.toString())],
+        });
+    } catch (err) {
+        throw err;
+    }
+};
 
 const addGeneralChatMsgCount = async () => {
     try {
@@ -64,19 +100,6 @@ const addWildNBMon = async (nbmonId, genus) => {
             appId: process.env.MORALIS_APPID,
             masterKey: process.env.MORALIS_MASTERKEY,
         });
-
-        // let currentId;
-
-        // // first, we query the latest wild NBMon's id to increment the new one by 1.
-        // const WildNBMonsData = new Moralis.Query('RHDiscordWildNBMons');
-        // WildNBMonsData.descending('nbmonId');
-
-        // const prevWildNBMonQuery = await WildNBMonsData.first({ useMasterKey: true });
-        // if (!prevWildNBMonQuery) {
-        //     currentId = 1;
-        // } else {
-        //     currentId = (parseJSON(prevWildNBMonQuery)).nbmonId + 1;
-        // }
 
         const RHDiscordWildNBMons = Moralis.Object.extend('RHDiscordWildNBMons');
         const rhDiscordWildNBMons = new RHDiscordWildNBMons();
@@ -174,9 +197,9 @@ const captureWildNBMon = async (id, userId) => {
             const currentNBMonsOwned = (parseJSON(userQuery)).nbmons;
 
             if (!currentNBMonsOwned) {
-                userQuery.set('nbmons', [wildNBMonPointer]);
+                userQuery.set('wildNBMons', [wildNBMonPointer]);
             } else {
-                userQuery.set('nbmons', [...currentNBMonsOwned, wildNBMonPointer]);
+                userQuery.set('wildNBMons', [...currentNBMonsOwned, wildNBMonPointer]);
             }
 
             await userQuery.save(null, { useMasterKey: true });
@@ -186,7 +209,7 @@ const captureWildNBMon = async (id, userId) => {
             const rhDiscord = new RHDiscord();
 
             rhDiscord.set('userId', userId);
-            rhDiscord.set('nbmons', [wildNBMonPointer]);
+            rhDiscord.set('wildNBMons', [wildNBMonPointer]);
 
             await rhDiscord.save(null, { useMasterKey: true });
         }
@@ -322,4 +345,5 @@ module.exports = {
     allowNextWildNBMonToAppear,
     getLatestWildNBMonId,
     checkPrevWildNBMonCaptured,
+    showUserInventory,
 };

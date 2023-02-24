@@ -9,7 +9,7 @@ const claimGPWRoleGAModal = require('./modals/claimGPWRoleGA');
 const chooseGPWCollab = require('./selectMenus/collabGPW');
 const { createBackup, fetchBackupInfo, loadBackup, deleteBackup } = require('./commands/backup');
 const { hunterGames } = require('./commands/hunterGames');
-const { wildNBMonAppearance, addGeneralChatMsgCount, getGeneralChatMsgCount, checkWildNBMonAppearance, updateWildNBMonAppearance, allowNextWildNBMonToAppear, getLatestWildNBMonId, checkPrevWildNBMonCaptured, captureWildNBMon } = require('./utils/hunterChatFiesta');
+const { wildNBMonAppearance, addGeneralChatMsgCount, getGeneralChatMsgCount, checkWildNBMonAppearance, updateWildNBMonAppearance, allowNextWildNBMonToAppear, getLatestWildNBMonId, checkPrevWildNBMonCaptured, captureWildNBMon, showUserInventory } = require('./utils/hunterChatFiesta');
 const { delay } = require('./utils/delay');
 const token = process.env.BOT_TOKEN;
 
@@ -57,9 +57,21 @@ client.on('ready', c => {
 // let lastWildNBMonAppearance = 0;
 
 client.on('messageCreate', async (message) => {
-    // if hunters want to capture the nbmon, they need to STRICTLY type !capture <ID> (e.g. !capture 1). 
+    // SHOW INVENTORY TO USER.
+    if (message.content.toLowerCase() === '!showinventory') {
+        // only available to `founders-bot-commands` right now. will be changed to `general-chat` later.
+        if (message.channelId !== '1070311416109740042') {
+            return;
+        }
+
+        const userId = message.author.id;
+        const username = message.author.tag;
+
+        const showInventory = await showUserInventory(message, userId, username);
+    }
+    // if hunters want to capture the nbmon, they need to STRICTLY type !capture <ID> (e.g. !capture 1).
     // any additional words after the ID will not be accepted.
-    if (message.channelId === '1070311416109740042' && !message.author.bot && message.content.includes('!capture')) {
+    if (message.channelId === '1070311416109740042' && !message.author.bot && message.content.includes('!capture') && !message.content.includes('!showinventory')) {
         const completeContent = message.content;
 
         const currentIdToCapture = await getLatestWildNBMonId();
@@ -82,7 +94,7 @@ client.on('messageCreate', async (message) => {
     // TEST WILD NBMON APPEARANCE
     // TEST ON TEST-FOUNDERS-BOT-COMMANDS CHANNEL
     // make sure that it doesnt count the bot itself + not default messages like to capture.
-    if (message.channelId === '1070311416109740042' && !message.author.bot && !message.content.includes('!capture')) {
+    if (message.channelId === '1070311416109740042' && !message.author.bot && !message.content.includes('!capture') && !message.content.includes('!showinventory')) {
         await addGeneralChatMsgCount();
         const rand = Math.floor(Math.random() * 1000) + 1;
 
