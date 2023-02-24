@@ -1,5 +1,6 @@
 require('dotenv').config();
 const Moralis = require('moralis-v1/node');
+const { hunterGamesFinished } = require('../embeds/hunterGames');
 const { parseJSON } = require('./jsonParser');
 
 /**
@@ -57,6 +58,154 @@ const claimRealmPoints = async (winnersData) => {
             status: 'success',
             message: 'Successfully updated Hunter Points for all winners.',
         };
+    } catch (err) {
+        throw err;
+    }
+};
+
+/**
+ * @param {Array} participantsArray the array of participants in the Hunter Games
+ * @param {Number} participantsCount the amount of starting participants in the Hunter Games
+ */
+const hunterGamesWinner = async (client, participantsArray, participantsCount) => {
+    try {
+        /**
+         * THE LOGIC FOR THE WINNER LEADERBOARD IS AS FOLLOWS:
+         * IF < 25 PARTICIPANTS, TOP 1 EARNS 10 REALM POINTS.
+         * IF 26 - 50 PARTICIPANTS, TOP 3 EARNS 14, 12, 10 REALM POINTS.
+         * IF 51 - 75 PARTICIPANTS, TOP 5 EARNS 16, 14, 12, 10, 9 REALM POINTS.
+         * IF 76 - 125 PARTICIPANTS, TOP 7 EARNS 17, 15, 14, 12, 10, 9, 8 REALM POINTS.
+         * IF 126 - 200 PARTICIPANTS, TOP 10 EARNS 19, 18, 17, 15, 13, 12, 10, 9, 8, 7 REALM POINTS.
+         * IF 201 - 300 PARTICIPANTS, TOP 15 EARNS 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6 REALM POINTS.
+         * IF > 301 PARTICIPANTS, TOP 20 EARNS 25, 23, 21, 20, 19, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3 REALM POINTS.
+         */
+        let leaderboardAsString = '';
+        let ranking = 1;
+        // we need to store the winners' data into an array of objects to reward them with the Realm Points
+        const winnersData = [];
+
+        if (participantsCount <= 25) {
+            const winner = participantsArray.filter(p => p.diedAtPosition === 0)[0];
+
+            // 1 winner. we store the data to the winnersData array.
+            const winnerData = {
+                userId: winner.userId,
+                realmPointsEarned: 10,
+            };
+            winnersData.push(winnerData);
+
+            // only 1 winner.
+            leaderboardAsString += `🏆 | 1. ${winner.usertag} - 10 Realm Points.`;
+        } else if (participantsCount <= 50) {
+            // 3 winners.
+            const points = [14, 12, 10];
+            const winners = participantsArray.filter(p => p.diedAtPosition <= 3);
+            const sortedWinners = winners.sort((a, b) => a.diedAtPosition - b.diedAtPosition);
+
+            sortedWinners.forEach((winner) => {
+                // first, we store the winners' data to the winnersData array.
+                const winnerData = {
+                    userId: winner.userId,
+                    realmPointsEarned: points[ranking - 1],
+                };
+                winnersData.push(winnerData);
+                // then, we update the leaderboard string.
+                leaderboardAsString += `🏆 | ${ranking}. ${winner.usertag} - ${points[ranking - 1]} Realm Points.\n`;
+                ranking++;
+            });
+        } else if (participantsCount <= 75) {
+            // 5 winners.
+            const points = [16, 14, 12, 10, 9];
+            const winners = participantsArray.filter(p => p.diedAtPosition <= 5);
+            const sortedWinners = winners.sort((a, b) => a.diedAtPosition - b.diedAtPosition);
+
+            sortedWinners.forEach((winner) => {
+                // first, we store the winners' data to the winnersData array.
+                const winnerData = {
+                    userId: winner.userId,
+                    realmPointsEarned: points[ranking - 1],
+                };
+                winnersData.push(winnerData);
+                // then, we update the leaderboard string.
+                leaderboardAsString += `🏆 | ${ranking}. ${winner.usertag} - ${points[ranking - 1]} Realm Points.\n`;
+                ranking++;
+            });
+        } else if (participantsCount <= 125) {
+            // 7 winners.
+            const points = [17, 15, 14, 12, 10, 9, 8];
+            const winners = participantsArray.filter(p => p.diedAtPosition <= 7);
+            const sortedWinners = winners.sort((a, b) => a.diedAtPosition - b.diedAtPosition);
+
+            sortedWinners.forEach((winner) => {
+                // first, we store the winners' data to the winnersData array.
+                const winnerData = {
+                    userId: winner.userId,
+                    realmPointsEarned: points[ranking - 1],
+                };
+                winnersData.push(winnerData);
+                // then, we update the leaderboard string.
+                leaderboardAsString += `🏆 | ${ranking}. ${winner.usertag} - ${points[ranking - 1]} Realm Points.\n`;
+                ranking++;
+            });
+        } else if (participantsCount <= 200) {
+            // 10 winners.
+            const points = [19, 18, 17, 15, 13, 12, 10, 9, 8, 7];
+            const winners = participantsArray.filter(p => p.diedAtPosition <= 10);
+            const sortedWinners = winners.sort((a, b) => a.diedAtPosition - b.diedAtPosition);
+
+            sortedWinners.forEach((winner) => {
+                // first, we store the winners' data to the winnersData array.
+                const winnerData = {
+                    userId: winner.userId,
+                    realmPointsEarned: points[ranking - 1],
+                };
+                winnersData.push(winnerData);
+                // then, we update the leaderboard string.
+                leaderboardAsString += `🏆 | ${ranking}. ${winner.usertag} - ${points[ranking - 1]} Realm Points.\n`;
+                ranking++;
+            });
+        } else if (participantsCount <= 300) {
+            // 15 winners.
+            const points = [20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6];
+            const winners = participantsArray.filter(p => p.diedAtPosition <= 15);
+            const sortedWinners = winners.sort((a, b) => a.diedAtPosition - b.diedAtPosition);
+
+            sortedWinners.forEach((winner) => {
+                // first, we store the winners' data to the winnersData array.
+                const winnerData = {
+                    userId: winner.userId,
+                    realmPointsEarned: points[ranking - 1],
+                };
+                winnersData.push(winnerData);
+                // then, we update the leaderboard string.
+                leaderboardAsString += `🏆 | ${ranking}. ${winner.usertag} - ${points[ranking - 1]} Realm Points.\n`;
+                ranking++;
+            });
+        } else {
+            // 20 winners.
+            const points = [21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2];
+            const winners = participantsArray.filter(p => p.diedAtPosition <= 20);
+            const sortedWinners = winners.sort((a, b) => a.diedAtPosition - b.diedAtPosition);
+
+            sortedWinners.forEach((winner) => {
+                // first, we store the winners' data to the winnersData array.
+                const winnerData = {
+                    userId: winner.userId,
+                    realmPointsEarned: points[ranking - 1],
+                };
+                winnersData.push(winnerData);
+                // then, we update the leaderboard string.
+                leaderboardAsString += `🏆 | ${ranking}. ${winner.usertag} - ${points[ranking - 1]} Realm Points.\n`;
+                ranking++;
+            });
+        }
+
+        const winnerEmbed = await client.channels.cache.get('1077197901517836348').send({
+            embeds: [hunterGamesFinished(leaderboardAsString)],
+        });
+
+        // now, we need to reward the winners with the Realm Points.
+        await claimRealmPoints(winnersData);
     } catch (err) {
         throw err;
     }
@@ -137,4 +286,5 @@ const battleMessageTemplates = (type, killer, victim) => {
 module.exports = {
     claimRealmPoints,
     battleMessageTemplates,
+    hunterGamesWinner,
 };
