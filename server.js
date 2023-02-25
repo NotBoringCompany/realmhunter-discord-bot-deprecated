@@ -12,6 +12,7 @@ const { createBackup, fetchBackupInfo, loadBackup, deleteBackup } = require('./c
 const { hunterGames } = require('./commands/hunterGames');
 const { wildNBMonAppearance, addGeneralChatMsgCount, getGeneralChatMsgCount, checkWildNBMonAppearance, updateWildNBMonAppearance, allowNextWildNBMonToAppear, getLatestWildNBMonId, checkPrevWildNBMonCaptured, captureWildNBMon, showUserInventory } = require('./utils/hunterChatFiesta');
 const { delay } = require('./utils/delay');
+const { claimInitialTags, showClaimTagsEmbed } = require('./commands/claimTags');
 const token = process.env.BOT_TOKEN;
 
 const client = new Client({
@@ -53,6 +54,25 @@ client.on('ready', async c => {
 });
 
 client.on('messageCreate', async (message) => {
+    // INITIAL CLAIM TAGS FOR ALL HUNTERS!
+    if (message.content.toLowerCase() === '!claimtags') {
+        // only available to `test-claim-tags` right now. will be changed to the claim-tags channel later.
+        if (message.channelId !== '1079134726155149542') {
+            return;
+        }
+
+        if (!message.member._roles.includes('956946650218237993')) {
+            return;
+        }
+
+        await showClaimTagsEmbed(message);
+
+        // const claimTags = await claimInitialTags(message);
+
+        // const status = claimTags.status;
+        // const getMessage = claimTags.message;
+        // await message.channel.send('Status: ' + status);
+    }
     // SHOW INVENTORY TO USER.
     if (message.content.toLowerCase() === '!showinventory') {
         // only available to `founders-bot-commands` right now. will be changed to `general-chat` later.
@@ -65,6 +85,7 @@ client.on('messageCreate', async (message) => {
 
         const showInventory = await showUserInventory(message, userId, username);
     }
+
     // if hunters want to capture the nbmon, they need to STRICTLY type !capture <ID> (e.g. !capture 1).
     // any additional words after the ID will not be accepted.
     if (
@@ -105,7 +126,7 @@ client.on('messageCreate', async (message) => {
         const rand = Math.floor(Math.random() * 1000) + 1;
 
         // 0.1% chance of wild NBMon appearing with each message
-        if (rand > 1) {
+        if (rand === 1) {
             // we check if a new wild NBMon can appear.
             const allow = await allowNextWildNBMonToAppear();
 
@@ -253,11 +274,12 @@ client.on('interactionCreate', async (interaction) => {
         }
     }
 
-    // if (interaction.isButton()) {
-    //     if (interaction.customId === 'claimGPWRoleGAButton') {
-    //         await interaction.showModal(claimGPWRoleGAModal);
-    //     }
-    // }
+    if (interaction.isButton()) {
+        if (interaction.customId === 'claimTagsButton') {
+            const { status, message } = await claimInitialTags(interaction);
+            await interaction.reply({ content: message, ephemeral: true });
+        }
+    }
     if (interaction.type === InteractionType.ModalSubmit) {
         if (interaction.customId === 'claimGuaranteedGPWModal') {
             // CHANGE LATER TO GOOGLE SHEETS LOGIC! (checkGAEntry)

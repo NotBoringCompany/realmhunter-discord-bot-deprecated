@@ -3,12 +3,24 @@ const Moralis = require('moralis-v1/node');
 const { parseJSON } = require('./jsonParser');
 
 /**
+ * Checks when the user (the one who called the command) joined the server and also if they have the Genesis Pass whitelist.
+ */
+const checkJoinDateAndRole = (interaction) => {
+    const unixTimestamp = Math.floor(interaction.member.joinedTimestamp / 1000);
+    const hasGenesisPassRole = interaction.member.roles.cache.some((role) => role.name === 'Genesis Pass Whitelist');
+    return {
+        joinDate: unixTimestamp,
+        hasGenesisPassRole: hasGenesisPassRole,
+    };
+};
+
+/**
  * `claimTags` allows Hunters to claim either 50 or 60 tags (depending on their role and enter date) once.
  * @param {String} userId the Discord user ID of the user (unique, so just in case for extra checks).
- * @param {String} role the role of the user.
+ * @param {Boolean} hasGenesisPassRole if the user has the Genesis Pass whitelist role.
  * @param {Number} joinDate the join date of the user (in unix).
  */
-const claimTags = async (userId, role, joinDate) => {
+const claimTags = async (userId, hasGenesisPassRole, joinDate) => {
     try {
         const RHDiscordDB = Moralis.Object.extend('RHDiscord');
         const rhDiscordDB = new RHDiscordDB();
@@ -23,17 +35,20 @@ const claimTags = async (userId, role, joinDate) => {
         if (!rawQuery) {
             rhDiscordDB.set('userId', userId);
 
-            if (role === 'Hunter') {
-                // if the user has the Hunter role and joined before 1 January 2023 00:00 GMT, they will get 60 tags.
+            // if the user has a genesis pass role, we will give them 150 tags regardless of the join date.
+            if (hasGenesisPassRole) {
+                rhDiscordDB.set('hunterTags', 150);
+            // if they don't have the genesis pass role, we will check their join date.
+            } else {
+                // if the user joined before 1 January 2023 00:00 GMT, they will get 150 tags.
                 if (joinDate <= 1672531200) {
-                    rhDiscordDB.set('hunterTags', 60);
+                    rhDiscordDB.set('hunterTags', 150);
+                // if the user joined after 1 January 2023 00:00 GMT, they will get 125 tags.
+                } else {
+                    rhDiscordDB.set('hunterTags', 125);
                 }
-                // if the user has the Hunter role and joined after 1 January 2023 00:00 GMT, they will get 50 tags.
-                rhDiscordDB.set('hunterTags', 50);
-            } else if (role === 'Genesis Pass Whitelist') {
-                // if the user is whitelisted for Genesis Pass, they will get 60 tags regardless of the join date.
-                rhDiscordDB.set('hunterTags', 60);
             }
+
             rhDiscordDB.set('hasClaimedTags', true);
             rhDiscordDB.set('claimedTagsTimestamp', Math.floor(new Date().getTime() / 1000));
             await rhDiscordDB.save(null, { useMasterKey: true });
@@ -47,25 +62,47 @@ const claimTags = async (userId, role, joinDate) => {
                 };
             // if user hasn't claimed their tags, we will allow them to claim their tags.
             } else {
-                if (role === 'Hunter') {
-                    // if the user has the Hunter role and joined before 1 January 2023 00:00 GMT, they will get 60 tags.
-                    if (joinDate <= 1672531200) {
-                        rawQuery.set('hunterTags', query.hunterTags + 60);
+                // if hunterTags is not undefined, we can check for the role first.
+                if (query.hunterTags >= 0) {
+                    // if the user has a genesis pass role, we will give them 150 tags regardless of the join date.
+                    if (hasGenesisPassRole) {
+                        rawQuery.set('hunterTags', query.hunterTags + 150);
+                    // if they don't have the genesis pass role, we will check their join date.
+                    } else {
+                        // if the user joined before 1 January 2023 00:00 GMT, they will get 150 tags.
+                        if (joinDate <= 1672531200) {
+                            rawQuery.set('hunterTags', query.hunterTags + 150);
+                        // if the user joined after 1 January 2023 00:00 GMT, they will get 125 tags.
+                        } else {
+                            rawQuery.set('hunterTags', query.hunterTags + 125);
+                        }
                     }
-                    // if the user has the Hunter role and joined after 1 January 2023 00:00 GMT, they will get 50 tags.
-                    rawQuery.set('hunterTags', query.hunterTags + 50);
-                } else if (role === 'Genesis Pass Whitelist') {
-                    // if the user is whitelisted for Genesis Pass, they will get 60 tags regardless of the join date.
-                    rawQuery.set('hunterTags', query.hunterTags + 60);
+                // if hunterTags is undefined, we will need to set the hunterTags. first, we check their role.
+                } else {
+                    // if the user has a genesis pass role, we will give them 150 tags regardless of the join date.
+                    if (hasGenesisPassRole) {
+                        rawQuery.set('hunterTags', 150);
+                    // if they don't have the genesis pass role, we will check their join date.
+                    } else {
+                        // if the user joined before 1 January 2023 00:00 GMT, they will get 150 tags.
+                        if (joinDate <= 1672531200) {
+                            rawQuery.set('hunterTags', 150);
+                        // if the user joined after 1 January 2023 00:00 GMT, they will get 125 tags.
+                        } else {
+                            rawQuery.set('hunterTags', 125);
+                        }
+                    }
                 }
+
                 rawQuery.set('hasClaimedTags', true);
                 rawQuery.set('claimedTagsTimestamp', Math.floor(new Date().getTime() / 1000));
+
                 await rawQuery.save(null, { useMasterKey: true });
             }
         }
         return {
             status: 'OK',
-            message: 'Claimed tags successfully.',
+            message: 'Claimed tags successfully. You should be able to see your new Hunter Tags balance in the #show-inventory channel by typing !showInventory.',
         };
     } catch (err) {
         throw err;
@@ -118,6 +155,7 @@ const claimExtraTags = async (userId) => {
 };
 
 module.exports = {
+    checkJoinDateAndRole,
     claimTags,
     claimExtraTags,
 };

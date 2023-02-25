@@ -158,7 +158,7 @@ const captureWildNBMon = async (id, userId) => {
 
         // if user is found, then we will add the captured wild NBMon to the user's inventory
         if (userQuery) {
-            const currentNBMonsOwned = (parseJSON(userQuery)).nbmons;
+            const currentNBMonsOwned = (parseJSON(userQuery)).wildNBMons;
 
             if (!currentNBMonsOwned) {
                 userQuery.set('wildNBMons', [wildNBMonPointer]);
