@@ -7,14 +7,29 @@ const {
     hunterGamesFinished,
 } = require('../embeds/hunterGames');
 const { delay } = require('../utils/delay');
-const { claimHunterPoints, claimRealmPoints, battleMessageTemplates, hunterGamesWinner } = require('../utils/hunterGames');
+const { claimHunterPoints, claimRealmPoints, battleMessageTemplates, hunterGamesWinner, hunterGamesEntranceFee, incrementHunterGamesId, getHunterGamesParticipants, getCurrentHunterGamesId, deleteParticipants, refundEntranceFee } = require('../utils/hunterGames');
 
-const hunterGames = async (client, message) => {
+const hunterGames = async (client) => {
     try {
+        const currentHunterGamesId = await getCurrentHunterGamesId();
+
         // first, we show an embed of the hybrid NBMon in #test-hunter-games.
         // currently, it is still statically set to Schoggi.
         const hunterGamesEmbed = await client.channels.cache.get('1077197901517836348').send({
             embeds: [hunterGamesMessage('Schoggi')],
+            components: [
+                {
+                    type: 1,
+                    components: [
+                        {
+                            type: 2,
+                            style: 1,
+                            label: 'Join the Hunter Games (10 Hunter Tags required)',
+                            custom_id: `joinHunterGamesButton${currentHunterGamesId}`,
+                        },
+                    ],
+                },
+            ],
         });
 
         // 3 second delay before putting the message in general chat to let the image and embed load properly.
@@ -28,73 +43,27 @@ const hunterGames = async (client, message) => {
             ' Hunter Games will start in 5 minutes: <#1077197901517836348>',
         );
 
-        // add the react emoji so people who want to participate can react to it.
-        await hunterGamesEmbed.react('⚔️');
-
-        // list of people who reacted to the emoji and want to participate in the games.
-        const participants = [];
-
-        // once the message is sent, we start the timer (5 minutes). Once the timer is up, we start the game.
-        const startTime = Date.now();
-
-        // we create a collector to listen to the reaction to check participants.
-        const reactionFilter = (reaction, user) => reaction.emoji.name === '⚔️' && !user.bot;
-        const collector = hunterGamesEmbed.createReactionCollector({ filter: reactionFilter, time: 300000, dispose: true });
-
-        collector.on('collect', (reaction, user) => {
-            const reacted = Date.now();
-            // if user reacted within the 5 mins time, they are added to the participants list.
-            // may not be needed, but just in case.
-            if (reacted - startTime < 300000) {
-                // we check if somehow the participant is already in the list.
-                const participantFound = participants.find(participant => participant.userId === user.id);
-                // if participant isn't found, we add them to the list.
-                if (!participantFound) {
-                    const participant = {
-                        // just for querying based on the position when they joined, not for stats.
-                        index: participants.length,
-                        usertag: user.tag,
-                        userId: user.id,
-                        kills: 0,
-                        hasDied: false,
-                        // if participant died when there's 20 people left (example), then he'll be at position 20.
-                        diedAtPosition: 0,
-                    };
-
-                    participants.push(participant);
-                // if that the participant is already in the list, we make sure
-                // that the participant has the default values before the game starts.
-                } else {
-                    participants.forEach((participant) => {
-                        if (participant.userId === user.id) {
-                            participant.usertag = user.tag;
-                            participant.kills = 0;
-                            participant.hasDied = false;
-                            participant.diedAtPosition = 0;
-                        }
-                    });
-                }
-            }
-        });
-
-        // if people unreact, they get removed from the participants list.
-        collector.on('remove', (reaction, user) => {
-            // if user removed their reaction, we remove them from the participants list.
-            participants.forEach((participant, index) => {
-                if (participant.userId === user.id) {
-                    participants.splice(index, 1);
-                }
-            });
-        });
-
-        // wait 10 seconds before the game starts.
-        ////////////// CHANGE THIS TO 4 UPDATES WITHIN 5 MINUTES LATER! //////////////
+        // after 5 minutes, we query the participants from Moralis (HunterGamesParticipants) and we add it to `participants`.
         await delay(10000);
+        const getParticipants = await getHunterGamesParticipants();
 
-        collector.stop();
+        // for all participants in `getParticipants`, we create our own participant object and add it to `participants`.
+        const participants = [];
+        getParticipants.forEach((participant) => {
+            const participantData = {
+                index: participants.length,
+                usertag: participant.usertag,
+                userId: participant.userId,
+                kills: 0,
+                hasDied: false,
+                // if participant died when there's 20 people left (example), then he'll be at position 20.
+                diedAtPosition: 0,
+            };
 
-        // at this point, the collector should stop and we will collect the participants amount.
-        // initially, `participantsLeft` will equal the amount of participants.
+            participants.push(participantData);
+        });
+
+        // initially, `participantsLeft` will equal the `participants` array.
         // as the game progresses, `participantsLeft` will decrease after each kill/suicide that happens.
         let participantsLeft = participants;
 
@@ -103,6 +72,13 @@ const hunterGames = async (client, message) => {
             await client.channels.cache.get('1077197901517836348').send({
                 embeds: [hunterGamesNoParticipants()],
             });
+            // we refund to the participant.
+            const { status, message } = await refundEntranceFee(participantsLeft[0].userId);
+            await client.channels.cache.get('1077197901517836348').send({ content: 'All participants refunded.' });
+            // we delete the participants from the current list.
+            await deleteParticipants();
+            // increment the hunter games ID from the previous ID.
+            await incrementHunterGamesId();
             return;
         }
 
@@ -283,7 +259,11 @@ const hunterGames = async (client, message) => {
         }
 
         // leaderboard + winner logic
-        await hunterGamesWinner(client, participants, participants.length); 
+        await hunterGamesWinner(client, participants, participants.length);
+        // increment the hunter games ID so the next game can use it.
+        await incrementHunterGamesId();
+        // delete the current game's participants from the database.
+        await deleteParticipants();
     } catch (err) {
         throw err;
     }

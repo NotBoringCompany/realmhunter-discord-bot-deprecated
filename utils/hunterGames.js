@@ -4,6 +4,195 @@ const { hunterGamesFinished } = require('../embeds/hunterGames');
 const { parseJSON } = require('./jsonParser');
 
 /**
+ * When each Hunter Games starts, we will increment the Hunter Games ID in Moralis' DB (RHDiscord).
+ * This is to keep track of the number of Hunter Games that has already happened and also
+ * to ensure the uniqueId of the `joinHunterGamesButton` is always up to date so people don't join the old ones.
+ */
+const incrementHunterGamesId = async () => {
+    try {
+        const RHDiscordData = new Moralis.Query('RHDiscordData');
+        RHDiscordData.equalTo('uniqueId', 1);
+
+        const query = await RHDiscordData.first({ useMasterKey: true });
+
+        if (!query) {
+            const RHDiscordDataDB = Moralis.Object.extend('RHDiscordData');
+            const rhdDB = new RHDiscordDataDB();
+            rhdDB.set('currentHunterGamesId', 1);
+
+            await rhdDB.save(null, { useMasterKey: true });
+        } else {
+            const currentHunterGamesId = (parseJSON(query)).currentHunterGamesId;
+            if (!currentHunterGamesId) {
+                query.set('currentHunterGamesId', 1);
+                await query.save(null, { useMasterKey: true });
+            } else {
+                query.set('currentHunterGamesId', currentHunterGamesId + 1);
+                await query.save(null, { useMasterKey: true });
+            }
+            await query.save(null, { useMasterKey: true });
+        }
+    } catch (err) {
+        throw err;
+    }
+};
+
+const getCurrentHunterGamesId = async () => {
+    try {
+        const RHDiscordData = new Moralis.Query('RHDiscordData');
+        RHDiscordData.equalTo('uniqueId', 1);
+
+        const query = await RHDiscordData.first({ useMasterKey: true });
+
+        if (!query) {
+            return 0;
+        }
+
+        const currentHunterGamesId = (parseJSON(query)).currentHunterGamesId;
+        return currentHunterGamesId;
+    } catch (err) {
+        throw err;
+    }
+};
+
+/**
+ * After announcing the start of each Hunter Games, we will gather participants who are eligible to enter
+ * (i.e. those who have 10 Hunter Tags to spend).
+ * Those that are eligible to enter will temporarily have their userIds stored in Moralis' DB (HunterGamesParticipants).
+ * Once the game ends, all of the entries in the DB will be removed for the next game again.
+ */
+const addParticipant = async (userId, usertag) => {
+    try {
+        // first, we want to check if the user has 10 Hunter Tags to spend.
+        const RHDiscord = new Moralis.Query('RHDiscord');
+        RHDiscord.equalTo('userId', userId);
+
+        const userQuery = await RHDiscord.first({ useMasterKey: true });
+
+        if (!userQuery) {
+            return {
+                status: 'error',
+                message: 'Please collect your tags first in #<1079134726155149542> before participating.',
+            };
+        }
+
+        const hunterTags = (parseJSON(userQuery)).hunterTags;
+
+        // if hunter doesn't have 10 hunter tags (or it's undefined i.e. default value), return a message saying that they don't have enough hunter tags.
+        if (!hunterTags || hunterTags < 10) {
+            return {
+                status: 'error',
+                message: 'You do not have enough Hunter Tags to participate.',
+            }
+        }
+
+        const HunterGames = Moralis.Object.extend('HunterGamesParticipants');
+        const hunterGames = new HunterGames();
+
+        const HunterGamesQuery = new Moralis.Query('HunterGamesParticipants');
+        HunterGamesQuery.equalTo('userId', userId);
+
+        // we want to query if the user ID already exists to not add duplicates.
+        const query = await HunterGamesQuery.first({ useMasterKey: true });
+
+        if (!query) {
+            // if the user is not added as a participant already, we can deduct the hunter tags and add them as a participant.
+            const deduct = hunterTags - 10;
+            userQuery.set('hunterTags', deduct);
+            await userQuery.save(null, { useMasterKey: true });
+            
+            hunterGames.set('userId', userId);
+            hunterGames.set('usertag', usertag);
+            await hunterGames.save(null, { useMasterKey: true });
+            return {
+                status: 'success',
+                message: '10 Hunter Tags deducted. You are now a participant in the Hunter Games. Good luck!',
+            }
+        } else {
+            return {
+                status: 'error',
+                message: 'You have already joined.',
+            }
+        }
+    } catch (err) {
+        throw err;
+    }
+};
+
+/**
+ * After the end of each Hunter Games, delete all participants in the `HunterGamesParticipants` DB.
+ */
+const deleteParticipants = async () => {
+    try {
+        const HunterGames = new Moralis.Query('HunterGamesParticipants');
+        const query = await HunterGames.find({ useMasterKey: true });
+
+        if (!query) {
+            return;
+        } else {
+            for (let i = 0; i < query.length; i++) {
+                const object = query[i];
+                await object.destroy({ useMasterKey: true });
+            }
+        }
+    } catch (err) {
+        throw err;
+    }
+}
+
+const getHunterGamesParticipants = async () => {
+    try {
+        const HunterGames = new Moralis.Query('HunterGamesParticipants');
+        const query = await HunterGames.find({ useMasterKey: true });
+
+        if (!query) {
+            return [];
+        } else {
+            console.log(parseJSON(query));
+            return parseJSON(query);
+        }
+    } catch (err) {
+        throw err;
+    }
+};
+
+/**
+ * In the off chance that a Hunter Games is cancelled, we will refund the Hunter Tags to the participants.
+ */
+const refundEntranceFee = async (userId) => {
+    try {
+        const RHDiscord = new Moralis.Query('RHDiscord');
+        RHDiscord.equalTo('userId', userId);
+
+        const query = await RHDiscord.first({ useMasterKey: true });
+
+        // if somehow query is not found, then they should contact support (since this most likely won't happen)
+        if (!query) {
+            return {
+                status: 'error',
+                message: `User not found. Please open a support ticket.`,
+            }
+        }
+
+        const hunterTags = (parseJSON(query)).hunterTags;
+
+        if (!hunterTags) {
+            query.set('hunterTags', 10);
+        } else {
+            query.set('hunterTags', hunterTags + 10);
+        }
+
+        await query.save(null, { useMasterKey: true });
+        return {
+            status: 'success',
+            message: 'Hunter Tags successfully refunded.'
+        }
+    } catch (err) {
+        throw err;
+    }
+};
+
+/**
  * Automatically updates the Realm Points won by participants of the Hunter Games in Moralis.
  * @param {Array} winnersData - An array of winner data objects (that includes 1. the user id and 2. the realm points they've won).
  */
@@ -278,7 +467,13 @@ const battleMessageTemplates = (type, killer, victim) => {
 };
 
 module.exports = {
+    getCurrentHunterGamesId,
+    incrementHunterGamesId,
+    getHunterGamesParticipants,
+    addParticipant,
+    deleteParticipants,
     claimRealmPoints,
     battleMessageTemplates,
     hunterGamesWinner,
+    refundEntranceFee,
 };

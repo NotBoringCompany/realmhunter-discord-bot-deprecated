@@ -13,6 +13,7 @@ const { hunterGames } = require('./commands/hunterGames');
 const { wildNBMonAppearance, addGeneralChatMsgCount, getGeneralChatMsgCount, checkWildNBMonAppearance, updateWildNBMonAppearance, allowNextWildNBMonToAppear, getLatestWildNBMonId, checkPrevWildNBMonCaptured, captureWildNBMon, showUserInventory } = require('./utils/hunterChatFiesta');
 const { delay } = require('./utils/delay');
 const { claimInitialTags, showClaimTagsEmbed } = require('./commands/claimTags');
+const { hunterGamesEntranceFee, addParticipant, getCurrentHunterGamesId } = require('./utils/hunterGames');
 const token = process.env.BOT_TOKEN;
 
 const client = new Client({
@@ -66,12 +67,6 @@ client.on('messageCreate', async (message) => {
         }
 
         await showClaimTagsEmbed(message);
-
-        // const claimTags = await claimInitialTags(message);
-
-        // const status = claimTags.status;
-        // const getMessage = claimTags.message;
-        // await message.channel.send('Status: ' + status);
     }
     // SHOW INVENTORY TO USER.
     if (message.content.toLowerCase() === '!showinventory') {
@@ -278,6 +273,18 @@ client.on('interactionCreate', async (interaction) => {
         if (interaction.customId === 'claimTagsButton') {
             const { status, message } = await claimInitialTags(interaction);
             await interaction.reply({ content: message, ephemeral: true });
+        }
+
+        if (interaction.customId.startsWith('joinHunterGamesButton')) {
+            const currentId = await getCurrentHunterGamesId();
+
+            if (interaction.customId === `joinHunterGamesButton${currentId}`) {
+                const { status, message } = await addParticipant(interaction.user.id, interaction.user.tag);
+                await interaction.reply({ content: message, ephemeral: true });
+            // if they try to join older games, tell them they can't.
+            } else {
+                await interaction.reply({ content: 'You cannot join an older Hunter Games event.', ephemeral: true });
+            }
         }
     }
     if (interaction.type === InteractionType.ModalSubmit) {

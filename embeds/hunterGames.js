@@ -5,7 +5,7 @@ const hunterGamesMessage = (nbmon) => {
         .setColor(0x0099FF)
         .setTitle(`Oh look! A ${nbmon}! React with ⚔️ to fight other Hunters and be the one to capture it.`)
         .setDescription('Hunter Games will start in 5 minutes.')
-        .setImage('https://not-boring-company.fra1.cdn.digitaloceanspaces.com/wild-nbmons%2FSchoggiTransparent.png');
+        .setImage('https://i.imgur.com/F7Y8mDZ.png');
 };
 
 const updateHunterGamesMessage = (time, additionalMsg) => {
