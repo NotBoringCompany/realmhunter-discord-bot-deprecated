@@ -7,16 +7,18 @@ const {
     hunterGamesFinished,
 } = require('../embeds/hunterGames');
 const { delay } = require('../utils/delay');
-const { claimHunterPoints, claimRealmPoints, battleMessageTemplates, hunterGamesWinner, hunterGamesEntranceFee, incrementHunterGamesId, getHunterGamesParticipants, getCurrentHunterGamesId, deleteParticipants, refundEntranceFee } = require('../utils/hunterGames');
+const { battleMessageTemplates, hunterGamesWinner, incrementHunterGamesId, getHunterGamesParticipants, getCurrentHunterGamesId, deleteParticipants, refundEntranceFee, randomizeNBMon } = require('../utils/hunterGames');
 
 const hunterGames = async (client) => {
     try {
         const currentHunterGamesId = await getCurrentHunterGamesId();
 
         // first, we show an embed of the hybrid NBMon in #test-hunter-games.
-        // currently, it is still statically set to Schoggi.
+        // we will randomize the nbmon here.
+        const { name, imageUrl } = randomizeNBMon();
+
         const hunterGamesEmbed = await client.channels.cache.get('1077197901517836348').send({
-            embeds: [hunterGamesMessage('Schoggi')],
+            embeds: [hunterGamesMessage(name, imageUrl)],
             components: [
                 {
                     type: 1,
@@ -44,7 +46,8 @@ const hunterGames = async (client) => {
         );
 
         // after 5 minutes, we query the participants from Moralis (HunterGamesParticipants) and we add it to `participants`.
-        await delay(10000);
+        //////////// CHANGE TO UPDATE MESSAGES! //////////////
+        await delay(20000);
         const getParticipants = await getHunterGamesParticipants();
 
         // for all participants in `getParticipants`, we create our own participant object and add it to `participants`.
@@ -66,6 +69,9 @@ const hunterGames = async (client) => {
         // initially, `participantsLeft` will equal the `participants` array.
         // as the game progresses, `participantsLeft` will decrease after each kill/suicide that happens.
         let participantsLeft = participants;
+
+        // wait 5 seconds before the game starts.
+        await delay(5000);
 
         // if there is 1 or less starting participants, the game will be cancelled.
         if (participantsLeft.length <= 1) {
@@ -265,6 +271,18 @@ const hunterGames = async (client) => {
         // delete the current game's participants from the database.
         await deleteParticipants();
     } catch (err) {
+        // if there's an error, we want to do 3 things before throwing an error.
+        // 1. refund ALL participants
+        // 2. delete the current game's participants from the database.
+        // 3. increment the hunter games ID so the next game can use it.
+        const getParticipants = await getHunterGamesParticipants();
+        getParticipants.forEach(async (participant) => {
+            await refundEntranceFee(participant.userId);
+        });
+
+        await deleteParticipants();
+        await incrementHunterGamesId();
+
         throw err;
     }
 };

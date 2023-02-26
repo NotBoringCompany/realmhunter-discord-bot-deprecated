@@ -1,11 +1,11 @@
 const { EmbedBuilder } = require('discord.js');
 
-const hunterGamesMessage = (nbmon) => {
+const hunterGamesMessage = (nbmon, imageUrl) => {
     return new EmbedBuilder()
         .setColor(0x0099FF)
         .setTitle(`Oh look! A ${nbmon}! React with ⚔️ to fight other Hunters and be the one to capture it.`)
         .setDescription('Hunter Games will start in 5 minutes.')
-        .setImage('https://i.imgur.com/F7Y8mDZ.png');
+        .setImage(imageUrl);
 };
 
 const updateHunterGamesMessage = (time, additionalMsg) => {
